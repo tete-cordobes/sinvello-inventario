@@ -6,7 +6,7 @@ import { Rol } from "@prisma/client"
 interface HeaderProps {
   title: string
   subtitle?: string
-  user: {
+  user?: {
     nombre: string
     rol: Rol
     franquiciaNombre?: string
