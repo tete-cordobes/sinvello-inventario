@@ -72,14 +72,15 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       return token
     },
     async session({ session, token }) {
-      session.user = {
-        id: token.id,
-        email: token.email,
-        nombre: token.nombre,
-        apellidos: token.apellidos,
-        rol: token.rol,
-        franquiciaId: token.franquiciaId,
-        franquiciaNombre: token.franquiciaNombre,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (session.user as any) = {
+        id: token.id as string,
+        email: token.email as string,
+        nombre: token.nombre as string,
+        apellidos: token.apellidos as string | undefined,
+        rol: token.rol as Rol,
+        franquiciaId: token.franquiciaId as string | undefined,
+        franquiciaNombre: token.franquiciaNombre as string | undefined,
       }
       return session
     },

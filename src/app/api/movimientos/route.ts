@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { Rol } from "@prisma/client"
+import { Rol, TipoMovimiento } from "@prisma/client"
 
 export async function GET(request: NextRequest) {
   try {
@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
         franquiciaId?: string
         productoId?: string
       }
-      tipo?: string
+      tipo?: TipoMovimiento
       createdAt?: {
         gte?: Date
         lte?: Date
@@ -51,8 +51,8 @@ export async function GET(request: NextRequest) {
     }
 
     // Filtros adicionales
-    if (tipo) {
-      whereClause.tipo = tipo
+    if (tipo && Object.values(TipoMovimiento).includes(tipo as TipoMovimiento)) {
+      whereClause.tipo = tipo as TipoMovimiento
     }
 
     if (productoId) {

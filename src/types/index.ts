@@ -25,17 +25,8 @@ declare module "next-auth" {
   }
 }
 
-declare module "next-auth/jwt" {
-  interface JWT {
-    id: string
-    email: string
-    nombre: string
-    apellidos?: string
-    rol: Rol
-    franquiciaId?: string
-    franquiciaNombre?: string
-  }
-}
+// JWT types are handled via type casting in auth.ts
+// This avoids module resolution issues with next-auth v5
 
 // Tipos para la API
 export interface ApiResponse<T = unknown> {
