@@ -15,11 +15,11 @@ interface HeaderProps {
 
 export function Header({ title, subtitle }: HeaderProps) {
   return (
-    <header className="bg-white border-b border-[var(--border)] px-6 py-4">
+    <header className="bg-white border-b border-[var(--border)] px-4 py-4 lg:px-6">
       <div className="flex items-center justify-between">
-        {/* Title */}
-        <div>
-          <h1 className="text-2xl font-bold text-[var(--sinvello-text-dark)]">
+        {/* Title - with left margin on mobile to avoid hamburger menu overlap */}
+        <div className="ml-12 lg:ml-0">
+          <h1 className="text-xl lg:text-2xl font-bold text-[var(--sinvello-text-dark)]">
             {title}
           </h1>
           {subtitle && (
