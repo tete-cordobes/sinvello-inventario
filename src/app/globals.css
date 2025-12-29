@@ -1,26 +1,168 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Colores Corporativos SinVello */
+  --sinvello-primary: #E6336E;
+  --sinvello-primary-hover: #d12a5f;
+  --sinvello-secondary: #1E1E1E;
+  --sinvello-background: #F5F5F5;
+  --sinvello-surface: #FFFFFF;
+  --sinvello-text: #666666;
+  --sinvello-text-dark: #1A1A2E;
+
+  /* Sistema de colores para componentes */
+  --background: #F5F5F5;
+  --foreground: #1A1A2E;
+  --card: #FFFFFF;
+  --card-foreground: #1A1A2E;
+  --popover: #FFFFFF;
+  --popover-foreground: #1A1A2E;
+  --primary: #E6336E;
+  --primary-foreground: #FFFFFF;
+  --secondary: #1E1E1E;
+  --secondary-foreground: #FFFFFF;
+  --muted: #F5F5F5;
+  --muted-foreground: #666666;
+  --accent: #FDF2F5;
+  --accent-foreground: #E6336E;
+  --destructive: #EF4444;
+  --destructive-foreground: #FFFFFF;
+  --border: #E5E5E5;
+  --input: #E5E5E5;
+  --ring: #E6336E;
+  --radius: 0.75rem;
+
+  /* Estados */
+  --success: #22C55E;
+  --warning: #F59E0B;
+  --error: #EF4444;
+  --info: #3B82F6;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-primary: var(--sinvello-primary);
+  --color-secondary: var(--sinvello-secondary);
+  --color-card: var(--card);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-error: var(--error);
+  --font-sans: var(--font-geist-sans), system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  border-color: var(--border);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Scrollbar personalizada */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--muted);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--sinvello-primary);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--sinvello-primary-hover);
+}
+
+/* Clases de utilidad personalizadas */
+.text-primary {
+  color: var(--sinvello-primary);
+}
+
+.bg-primary {
+  background-color: var(--sinvello-primary);
+}
+
+.border-primary {
+  border-color: var(--sinvello-primary);
+}
+
+/* Botón primario */
+.btn-primary {
+  background-color: var(--sinvello-primary);
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  transition: all 0.2s;
+  box-shadow: 0 4px 12px rgba(230, 51, 110, 0.3);
+}
+
+.btn-primary:hover {
+  background-color: var(--sinvello-primary-hover);
+  transform: translateY(-1px);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+/* Card con sombra */
+.card {
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--border);
+}
+
+/* Badge de stock bajo */
+.badge-low-stock {
+  background-color: #FEE2E2;
+  color: #DC2626;
+  padding: 0.25rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.badge-ok-stock {
+  background-color: #DCFCE7;
+  color: #16A34A;
+  padding: 0.25rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+/* Animaciones */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Focus visible */
+:focus-visible {
+  outline: 2px solid var(--sinvello-primary);
+  outline-offset: 2px;
+}
+
+/* Transiciones suaves */
+.transition-all {
+  transition: all 0.2s ease-in-out;
 }

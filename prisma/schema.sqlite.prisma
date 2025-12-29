@@ -1,0 +1,150 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+// Franquicias de SinVello
+model Franquicia {
+  id        String   @id @default(cuid())
+  codigo    String   @unique // Ej: "MAD001", "BCN002"
+  nombre    String
+  direccion String?
+  telefono  String?
+  email     String?
+  activo    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  usuarios   Usuario[]
+  inventario Inventario[]
+
+  @@index([codigo])
+  @@index([activo])
+}
+
+// Roles de usuario
+enum Rol {
+  CENTRAL      // Ve todas las franquicias, acceso total
+  FRANQUICIADO // Ve solo su franquicia, reportes
+  TECNICO      // Solo inventario de su franquicia, registrar consumo/reposición
+}
+
+// Usuarios del sistema
+model Usuario {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  nombre       String
+  apellidos    String?
+  rol          Rol      @default(TECNICO)
+  activo       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  franquiciaId String?
+  franquicia   Franquicia? @relation(fields: [franquiciaId], references: [id])
+
+  movimientos Movimiento[]
+
+  @@index([email])
+  @@index([rol])
+  @@index([franquiciaId])
+}
+
+// Catálogo de productos (compartido entre franquicias)
+model Producto {
+  id          String   @id @default(cuid())
+  nombre      String
+  descripcion String?
+  precio      Float?
+  imagenUrl   String?
+  categoria   String   @default("Uncategorized")
+  sku         String?  @unique
+  activo      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  inventario Inventario[]
+
+  @@index([categoria])
+  @@index([nombre])
+  @@index([activo])
+}
+
+// Inventario por franquicia
+model Inventario {
+  id             String   @id @default(cuid())
+  cantidadActual Int      @default(0)
+  stockMinimo    Int      @default(5)
+  stockMaximo    Int      @default(100)
+  ubicacion      String?  // Ej: "Almacén A", "Estante 3"
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  franquiciaId String
+  franquicia   Franquicia @relation(fields: [franquiciaId], references: [id])
+
+  productoId String
+  producto   Producto @relation(fields: [productoId], references: [id])
+
+  movimientos Movimiento[]
+
+  @@unique([franquiciaId, productoId])
+  @@index([franquiciaId])
+  @@index([productoId])
+  @@index([cantidadActual])
+}
+
+// Tipo de movimiento de stock
+enum TipoMovimiento {
+  REPOSICION // Entrada de stock
+  CONSUMO    // Salida de stock
+  AJUSTE     // Ajuste manual (corrección)
+}
+
+// Origen del movimiento
+enum OrigenMovimiento {
+  MANUAL  // Registrado manualmente por usuario
+  WEBHOOK // Recibido vía API externa
+  SISTEMA // Generado automáticamente
+}
+
+// Histórico de movimientos
+model Movimiento {
+  id               String           @id @default(cuid())
+  tipo             TipoMovimiento
+  cantidad         Int              // Cantidad del movimiento (siempre positivo)
+  cantidadAnterior Int              // Stock antes del movimiento
+  cantidadNueva    Int              // Stock después del movimiento
+  notas            String?
+  origen           OrigenMovimiento @default(MANUAL)
+  createdAt        DateTime         @default(now())
+
+  inventarioId String
+  inventario   Inventario @relation(fields: [inventarioId], references: [id])
+
+  usuarioId String?
+  usuario   Usuario? @relation(fields: [usuarioId], references: [id])
+
+  @@index([inventarioId])
+  @@index([usuarioId])
+  @@index([tipo])
+  @@index([origen])
+  @@index([createdAt])
+}
+
+// Configuración del webhook
+model WebhookConfig {
+  id        String   @id @default(cuid())
+  nombre    String
+  apiKey    String   @unique
+  activo    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([apiKey])
+}
