@@ -1,36 +1,115 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# SinVello! Inventario
 
-## Getting Started
+Sistema de gestión de inventario para franquicias **SinVello** (centros de depilación láser).
 
-First, run the development server:
+![SinVello Logo](https://pedidos.sinvelloporlaser.es/wp-content/uploads/2025/03/logo.avif)
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## Descripción
+
+Aplicación web que permite gestionar el inventario de productos consumibles, desechables y equipamiento de múltiples franquicias SinVello. Incluye control de stock, histórico de movimientos, reportes visuales y un sistema de roles para diferentes niveles de acceso.
+
+## Características Principales
+
+### Sistema de Autenticación por Roles
+
+| Rol | Acceso |
+|-----|--------|
+| **CENTRAL** | Todas las franquicias, gestión de usuarios y franquicias |
+| **FRANQUICIADO** | Solo su franquicia, dashboard y reportes |
+| **TECNICO** | Solo inventario de su franquicia (registrar consumo/reposición) |
+
+### Gestión de Inventario
+- Catálogo de 41 productos organizados por categorías (Consumibles, Desechables, Equipamiento, Limpieza, Textil, Merch)
+- Control de stock mínimo/máximo con alertas visuales
+- Registro de movimientos: Reposición, Consumo, Ajuste
+- Imágenes de productos desde el catálogo oficial
+
+### Reportes y Análisis
+- Dashboard con estadísticas en tiempo real
+- Gráficos de consumo por producto y tendencias mensuales
+- Histórico de movimientos con filtros avanzados
+- Exportación a CSV
+
+### Webhook API
+- Endpoint para recibir consumos automáticos desde sistemas externos
+- Autenticación por API Key
+- Registro automático en histórico
+
+## Stack Tecnológico
+
+| Capa | Tecnología |
+|------|------------|
+| Frontend | Next.js 16 + TypeScript + React 19 |
+| Estilos | Tailwind CSS 4 + Colores corporativos SinVello |
+| Backend | Next.js API Routes |
+| Base de datos | PostgreSQL (Neon serverless) |
+| ORM | Prisma 5 |
+| Autenticación | NextAuth.js v5 |
+| Gráficos | Recharts |
+
+## Colores Corporativos
+
+```css
+--sinvello-primary: #E6336E;    /* Rosa/Magenta */
+--sinvello-secondary: #1E1E1E;  /* Gris oscuro */
+--sinvello-background: #F5F5F5; /* Fondo claro */
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Instalación Local
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+# Clonar repositorio
+git clone https://github.com/[usuario]/sinvello-inventario.git
+cd sinvello-inventario
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+# Instalar dependencias
+npm install
 
-## Learn More
+# Configurar variables de entorno
+cp .env.example .env
+# Editar .env con tu DATABASE_URL de Neon
 
-To learn more about Next.js, take a look at the following resources:
+# Crear tablas y cargar datos
+npm run db:push
+npm run db:seed
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+# Iniciar servidor
+npm run dev
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Usuarios de Prueba
 
-## Deploy on Vercel
+| Email | Contraseña | Rol | Franquicia |
+|-------|------------|-----|------------|
+| admin@sinvello.es | sinvello2024 | CENTRAL | Todas |
+| madrid@sinvello.es | sinvello2024 | FRANQUICIADO | Madrid |
+| barcelona@sinvello.es | sinvello2024 | FRANQUICIADO | Barcelona |
+| tecnico.madrid@sinvello.es | sinvello2024 | TECNICO | Madrid |
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Variables de Entorno
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```env
+DATABASE_URL="postgresql://..."
+NEXTAUTH_SECRET="..."
+NEXTAUTH_URL="https://..."
+WEBHOOK_API_KEY="..."
+```
+
+## API Webhook
+
+```bash
+POST /api/webhook/consumo-semanal
+Content-Type: application/json
+X-API-Key: [WEBHOOK_API_KEY]
+
+{
+  "franquicia_codigo": "MAD001",
+  "consumos": [
+    { "producto_id": "xxx", "cantidad": 5 }
+  ]
+}
+```
+
+---
+
+Desarrollado para **SinVello!** - Centros de depilación láser
