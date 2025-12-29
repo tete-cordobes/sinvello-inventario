@@ -311,8 +311,8 @@ export default function ReportesPage() {
                         cx="50%"
                         cy="50%"
                         outerRadius={100}
-                        label={({ categoria, percent }) =>
-                          `${categoria} (${(percent * 100).toFixed(0)}%)`
+                        label={({ name, percent }) =>
+                          `${name} (${((percent || 0) * 100).toFixed(0)}%)`
                         }
                         labelLine={false}
                       >
