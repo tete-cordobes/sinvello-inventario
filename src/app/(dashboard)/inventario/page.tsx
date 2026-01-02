@@ -15,6 +15,7 @@ interface InventarioItem {
   cantidadActual: number
   stockMinimo: number
   stockMaximo: number
+  esNuevo?: boolean
   producto: {
     id: string
     nombre: string
@@ -70,6 +71,8 @@ export default function InventarioPage() {
     nombre: string
     cantidadActual: number
     stockMaximo: number
+    franquiciaId?: string
+    productoId?: string
   } | null>(null)
 
   // Bulk edit mode
@@ -78,6 +81,8 @@ export default function InventarioPage() {
     cantidadActual: number
     stockMinimo?: number
     stockMaximo?: number
+    franquiciaId?: string
+    productoId?: string
   }>>({})
   const [isSaving, setIsSaving] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
@@ -89,6 +94,7 @@ export default function InventarioPage() {
       if (busqueda) params.set("busqueda", busqueda)
       if (categoriaFiltro) params.set("categoria", categoriaFiltro)
       if (stockBajo) params.set("stockBajo", "true")
+      if (franquiciaFiltro) params.set("franquiciaId", franquiciaFiltro)
 
       const response = await fetch(`/api/inventario?${params}`)
       const data = await response.json()
@@ -156,7 +162,7 @@ export default function InventarioPage() {
     } finally {
       setIsLoading(false)
     }
-  }, [busqueda, categoriaFiltro, stockBajo])
+  }, [busqueda, categoriaFiltro, stockBajo, franquiciaFiltro])
 
   useEffect(() => {
     fetchInventario()
@@ -173,16 +179,22 @@ export default function InventarioPage() {
       nombre: item.producto.nombre,
       cantidadActual: item.cantidadActual,
       stockMaximo: item.stockMaximo,
+      // Pasar franquiciaId y productoId para inventarios nuevos
+      franquiciaId: item.franquicia.id,
+      productoId: item.producto.id,
     })
     setModalOpen(true)
   }
 
-  const handleBulkChange = (inventarioId: string, field: string, value: number) => {
+  const handleBulkChange = (inventarioId: string, field: string, value: number, franquiciaId?: string, productoId?: string) => {
     setBulkChanges((prev) => ({
       ...prev,
       [inventarioId]: {
         ...prev[inventarioId],
         [field]: value,
+        // Guardar franquiciaId y productoId para inventarios nuevos
+        ...(franquiciaId && { franquiciaId }),
+        ...(productoId && { productoId }),
       },
     }))
   }
@@ -741,7 +753,7 @@ export default function InventarioPage() {
                              min="0"
                              value={changes.cantidadActual ?? item.cantidadActual}
                              onChange={(e) =>
-                               handleBulkChange(item.id, "cantidadActual", parseInt(e.target.value) || 0)
+                               handleBulkChange(item.id, "cantidadActual", parseInt(e.target.value) || 0, item.franquicia.id, item.producto.id)
                              }
                              className={`w-24 text-right px-2 py-1 rounded border transition-all
                                         focus:ring-2 focus:ring-[var(--sinvello-primary)]/20 bg-[var(--input)] text-[var(--foreground)] ${
@@ -757,7 +769,7 @@ export default function InventarioPage() {
                              min="0"
                              value={changes.stockMinimo ?? item.stockMinimo}
                              onChange={(e) =>
-                               handleBulkChange(item.id, "stockMinimo", parseInt(e.target.value) || 0)
+                               handleBulkChange(item.id, "stockMinimo", parseInt(e.target.value) || 0, item.franquicia.id, item.producto.id)
                              }
                              className={`w-24 text-right px-2 py-1 rounded border transition-all
                                         focus:ring-2 focus:ring-[var(--sinvello-primary)]/20 bg-[var(--input)] text-[var(--foreground)] ${
@@ -773,7 +785,7 @@ export default function InventarioPage() {
                              min="0"
                              value={changes.stockMaximo ?? item.stockMaximo}
                              onChange={(e) =>
-                               handleBulkChange(item.id, "stockMaximo", parseInt(e.target.value) || 0)
+                               handleBulkChange(item.id, "stockMaximo", parseInt(e.target.value) || 0, item.franquicia.id, item.producto.id)
                              }
                              className={`w-24 text-right px-2 py-1 rounded border transition-all
                                         focus:ring-2 focus:ring-[var(--sinvello-primary)]/20 bg-[var(--input)] text-[var(--foreground)] ${

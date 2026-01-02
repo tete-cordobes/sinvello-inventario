@@ -13,6 +13,8 @@ interface MovimientoModalProps {
     nombre: string
     cantidadActual: number
     stockMaximo: number
+    franquiciaId?: string
+    productoId?: string
   }
   onSuccess: () => void
 }
@@ -42,6 +44,7 @@ export default function MovimientoModal({
     setIsLoading(true)
 
     try {
+      const esNuevo = producto.inventarioId.startsWith("nuevo_")
       const response = await fetch(
         `/api/inventario/${producto.inventarioId}/movimiento`,
         {
@@ -51,6 +54,11 @@ export default function MovimientoModal({
             tipo,
             cantidad,
             notas: notas.trim() || undefined,
+            // Enviar franquiciaId y productoId si es nuevo inventario
+            ...(esNuevo && {
+              franquiciaId: producto.franquiciaId,
+              productoId: producto.productoId,
+            }),
           }),
         }
       )

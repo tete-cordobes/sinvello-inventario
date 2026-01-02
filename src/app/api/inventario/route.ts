@@ -17,12 +17,19 @@ export async function GET(request: NextRequest) {
     const franquiciaId = searchParams.get("franquiciaId")
 
     // Determinar qué franquicia(s) puede ver el usuario
-    const whereClause: Record<string, unknown> = {}
+    let franquiciaIds: string[] = []
 
     if (session.user.rol === Rol.CENTRAL) {
       // Central puede ver todas, pero puede filtrar por franquicia
       if (franquiciaId) {
-        whereClause.franquiciaId = franquiciaId
+        franquiciaIds = [franquiciaId]
+      } else {
+        // Obtener todas las franquicias
+        const todasFranquicias = await prisma.franquicia.findMany({
+          where: { activo: true },
+          select: { id: true }
+        })
+        franquiciaIds = todasFranquicias.map(f => f.id)
       }
     } else {
       // Franquiciado y Técnico: obtener franquicias actuales de la BD (no del JWT cacheado)
@@ -44,39 +51,41 @@ export async function GET(request: NextRequest) {
         )
       }
 
-      const franquiciaIds = usuarioConFranquicias.franquicias.map(f => f.franquiciaId)
-      
-      // Si tiene múltiples franquicias, mostrar todas
-      if (franquiciaIds.length === 1) {
-        whereClause.franquiciaId = franquiciaIds[0]
-      } else {
-        whereClause.franquiciaId = { in: franquiciaIds }
-      }
+      franquiciaIds = usuarioConFranquicias.franquicias.map(f => f.franquiciaId)
     }
 
-    // Filtro por categoría
+    // Obtener las franquicias
+    const franquicias = await prisma.franquicia.findMany({
+      where: { id: { in: franquiciaIds }, activo: true },
+      select: { id: true, nombre: true, codigo: true }
+    })
+
+    // Construir filtro de productos
+    const productoWhere: Record<string, unknown> = { activo: true }
+    
     if (categoria) {
-      whereClause.producto = {
-        categoria,
-        activo: true,
-      }
-    } else {
-      whereClause.producto = { activo: true }
+      productoWhere.categoria = categoria
     }
-
-    // Filtro por búsqueda
+    
     if (busqueda) {
-      whereClause.producto = {
-        ...whereClause.producto as object,
-        nombre: {
-          contains: busqueda,
-          mode: "insensitive",
-        },
+      productoWhere.nombre = {
+        contains: busqueda,
+        mode: "insensitive",
       }
     }
 
-    const inventario = await prisma.inventario.findMany({
-      where: whereClause,
+    // Obtener todos los productos activos
+    const productos = await prisma.producto.findMany({
+      where: productoWhere,
+      orderBy: { nombre: "asc" }
+    })
+
+    // Obtener inventario existente para las franquicias
+    const inventarioExistente = await prisma.inventario.findMany({
+      where: {
+        franquiciaId: { in: franquiciaIds },
+        producto: { activo: true }
+      },
       include: {
         producto: true,
         franquicia: {
@@ -87,19 +96,72 @@ export async function GET(request: NextRequest) {
           },
         },
       },
-      orderBy: [
-        { cantidadActual: "asc" },
-        { producto: { nombre: "asc" } },
-      ],
     })
 
+    // Crear un mapa de inventario existente: franquiciaId_productoId -> inventario
+    const inventarioMap = new Map<string, typeof inventarioExistente[0]>()
+    inventarioExistente.forEach(inv => {
+      inventarioMap.set(`${inv.franquiciaId}_${inv.productoId}`, inv)
+    })
+
+    // Generar lista completa: para cada producto y cada franquicia
+    const resultado: Array<{
+      id: string
+      cantidadActual: number
+      stockMinimo: number
+      stockMaximo: number
+      ubicacion: string | null
+      createdAt: Date
+      updatedAt: Date
+      franquiciaId: string
+      productoId: string
+      producto: typeof productos[0]
+      franquicia: typeof franquicias[0]
+      esNuevo?: boolean
+    }> = []
+
+    for (const franquicia of franquicias) {
+      for (const producto of productos) {
+        const key = `${franquicia.id}_${producto.id}`
+        const inventario = inventarioMap.get(key)
+
+        if (inventario) {
+          resultado.push(inventario)
+        } else {
+          // Crear registro virtual para productos sin inventario
+          resultado.push({
+            id: `nuevo_${franquicia.id}_${producto.id}`,
+            cantidadActual: 0,
+            stockMinimo: 5,
+            stockMaximo: 100,
+            ubicacion: null,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            franquiciaId: franquicia.id,
+            productoId: producto.id,
+            producto: producto,
+            franquicia: franquicia,
+            esNuevo: true
+          })
+        }
+      }
+    }
+
     // Filtrar por stock bajo si es necesario
-    let resultado = inventario
+    let resultadoFinal = resultado
     if (stockBajo) {
-      resultado = inventario.filter(
+      resultadoFinal = resultado.filter(
         (item) => item.cantidadActual <= item.stockMinimo
       )
     }
+
+    // Ordenar: primero por cantidad (menor primero), luego por nombre de producto
+    resultadoFinal.sort((a, b) => {
+      if (a.cantidadActual !== b.cantidadActual) {
+        return a.cantidadActual - b.cantidadActual
+      }
+      return a.producto.nombre.localeCompare(b.producto.nombre)
+    })
 
     // Obtener categorías únicas
     const categorias = await prisma.producto.groupBy({
@@ -110,7 +172,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      data: resultado,
+      data: resultadoFinal,
       categorias: categorias.map((c) => ({
         nombre: c.categoria,
         count: c._count,

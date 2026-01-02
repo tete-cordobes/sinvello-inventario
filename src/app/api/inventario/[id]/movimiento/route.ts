@@ -15,7 +15,7 @@ export async function POST(
 
     const { id } = await params
     const body = await request.json()
-    const { tipo, cantidad, notas } = body
+    const { tipo, cantidad, notas, franquiciaId, productoId } = body
 
     // Validar tipo
     if (!["REPOSICION", "CONSUMO", "AJUSTE"].includes(tipo)) {
@@ -33,28 +33,76 @@ export async function POST(
       )
     }
 
-    // Obtener inventario
-    const inventario = await prisma.inventario.findUnique({
-      where: { id },
-      include: { franquicia: true },
-    })
+    // Verificar si es un inventario nuevo (sin registro en BD)
+    const esNuevo = id.startsWith("nuevo_")
+    
+    let inventario
+    let inventarioId = id
 
-    if (!inventario) {
-      return NextResponse.json(
-        { error: "Inventario no encontrado" },
-        { status: 404 }
-      )
-    }
+    if (esNuevo) {
+      // Validar que se proporcionen franquiciaId y productoId
+      if (!franquiciaId || !productoId) {
+        return NextResponse.json(
+          { error: "Se requiere franquiciaId y productoId para crear inventario" },
+          { status: 400 }
+        )
+      }
 
-    // Verificar permisos
-    if (
-      session.user.rol !== Rol.CENTRAL &&
-      inventario.franquiciaId !== session.user.franquiciaId
-    ) {
-      return NextResponse.json(
-        { error: "No tienes permiso para esta franquicia" },
-        { status: 403 }
-      )
+      // Verificar permisos para la franquicia
+      if (session.user.rol !== Rol.CENTRAL) {
+        const usuarioFranquicias = await prisma.usuarioFranquicia.findMany({
+          where: { usuarioId: session.user.id },
+          select: { franquiciaId: true }
+        })
+        const tieneAcceso = usuarioFranquicias.some(uf => uf.franquiciaId === franquiciaId)
+        if (!tieneAcceso) {
+          return NextResponse.json(
+            { error: "No tienes permiso para esta franquicia" },
+            { status: 403 }
+          )
+        }
+      }
+
+      // Crear el registro de inventario
+      inventario = await prisma.inventario.create({
+        data: {
+          franquiciaId,
+          productoId,
+          cantidadActual: 0,
+          stockMinimo: 5,
+          stockMaximo: 100
+        },
+        include: { franquicia: true }
+      })
+      inventarioId = inventario.id
+    } else {
+      // Obtener inventario existente
+      inventario = await prisma.inventario.findUnique({
+        where: { id },
+        include: { franquicia: true },
+      })
+
+      if (!inventario) {
+        return NextResponse.json(
+          { error: "Inventario no encontrado" },
+          { status: 404 }
+        )
+      }
+
+      // Verificar permisos
+      if (session.user.rol !== Rol.CENTRAL) {
+        const usuarioFranquicias = await prisma.usuarioFranquicia.findMany({
+          where: { usuarioId: session.user.id },
+          select: { franquiciaId: true }
+        })
+        const tieneAcceso = usuarioFranquicias.some(uf => uf.franquiciaId === inventario!.franquiciaId)
+        if (!tieneAcceso) {
+          return NextResponse.json(
+            { error: "No tienes permiso para esta franquicia" },
+            { status: 403 }
+          )
+        }
+      }
     }
 
     // Calcular nueva cantidad
@@ -79,7 +127,7 @@ export async function POST(
     // Transacción: actualizar inventario + crear movimiento
     const [inventarioActualizado, movimiento] = await prisma.$transaction([
       prisma.inventario.update({
-        where: { id },
+        where: { id: inventarioId },
         data: { cantidadActual: cantidadNueva },
       }),
       prisma.movimiento.create({
@@ -90,7 +138,7 @@ export async function POST(
           cantidadNueva,
           notas,
           origen: OrigenMovimiento.MANUAL,
-          inventarioId: id,
+          inventarioId: inventarioId,
           usuarioId: session.user.id,
         },
       }),
