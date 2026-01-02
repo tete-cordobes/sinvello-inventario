@@ -16,6 +16,7 @@ import {
   Menu,
   X,
   ChevronRight,
+  ShoppingBag,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Rol } from "@prisma/client"
@@ -54,6 +55,12 @@ const menuItems = [
     href: "/reportes",
     icon: BarChart3,
     roles: ["CENTRAL", "FRANQUICIADO"],
+  },
+  {
+    name: "Productos",
+    href: "/productos",
+    icon: ShoppingBag,
+    roles: ["CENTRAL"],
   },
   {
     name: "Franquicias",
