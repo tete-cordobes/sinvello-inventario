@@ -59,6 +59,15 @@ function getCategoria(nombreProducto: string): string {
 async function main() {
   console.log("🌱 Iniciando seed de la base de datos...")
 
+  // LIMPIAR BASE DE DATOS
+  console.log("🗑️  Limpiando datos existentes...")
+  await prisma.movimiento.deleteMany()
+  await prisma.inventario.deleteMany()
+  await prisma.usuarioFranquicia.deleteMany()
+  await prisma.usuario.deleteMany()
+  await prisma.franquicia.deleteMany()
+  console.log("✅ Datos anteriores eliminados")
+
   // Leer productos del archivo JSON
   const productosPath = path.join(__dirname, "../../productos.json")
   const productosData = JSON.parse(fs.readFileSync(productosPath, "utf-8"))
@@ -66,121 +75,130 @@ async function main() {
 
   console.log(`📦 Encontrados ${productos.length} productos para importar`)
 
-  // Crear franquicias de ejemplo
+  // Crear franquicias Naheri
   const franquicias = await Promise.all([
-    prisma.franquicia.upsert({
-      where: { codigo: "MAD001" },
-      update: {},
-      create: {
-        codigo: "MAD001",
-        nombre: "SinVello Madrid Centro",
-        direccion: "Calle Gran Vía 45, Madrid",
-        telefono: "+34 911 234 567",
-        email: "madrid@sinvello.es",
+    prisma.franquicia.create({
+      data: {
+        codigo: "ALB001",
+        nombre: "Naheri Albacete",
+        direccion: "Albacete",
+        email: "albacete@naheri.es",
       },
     }),
-    prisma.franquicia.upsert({
-      where: { codigo: "BCN001" },
-      update: {},
-      create: {
-        codigo: "BCN001",
-        nombre: "SinVello Barcelona",
-        direccion: "Passeig de Gràcia 78, Barcelona",
-        telefono: "+34 932 345 678",
-        email: "barcelona@sinvello.es",
+    prisma.franquicia.create({
+      data: {
+        codigo: "POZ001",
+        nombre: "Naheri Pozoblanco",
+        direccion: "Pozoblanco",
+        email: "pozoblanco@naheri.es",
       },
     }),
-    prisma.franquicia.upsert({
-      where: { codigo: "VAL001" },
-      update: {},
-      create: {
-        codigo: "VAL001",
-        nombre: "SinVello Valencia",
-        direccion: "Calle Colón 32, Valencia",
-        telefono: "+34 963 456 789",
-        email: "valencia@sinvello.es",
+    prisma.franquicia.create({
+      data: {
+        codigo: "BEN001",
+        nombre: "Naheri Benimaclet",
+        direccion: "Benimaclet, Valencia",
+        email: "benimaclet@naheri.es",
+      },
+    }),
+    prisma.franquicia.create({
+      data: {
+        codigo: "PAT001",
+        nombre: "Naheri Patraix",
+        direccion: "Patraix, Valencia",
+        email: "patraix@naheri.es",
       },
     }),
   ])
 
   console.log(`🏢 Creadas ${franquicias.length} franquicias`)
 
-  // Crear usuarios de ejemplo
-  const passwordHash = await hash("sinvello2024", 12)
+  // Crear usuarios
+  const passwords = {
+    alba: await hash("lg5gEE0X7QpU", 12),
+    albacete: await hash("UvpLkkj65cL7", 12),
+    pozoblanco: await hash("fhweJLDmiQnm", 12),
+    benimaclet: await hash("02qcM5Q7V9HL", 12),
+    patraix: await hash("T7NqTO4sj1qe", 12),
+  }
 
-  const usuarios = await Promise.all([
-    // Usuario Central
-    prisma.usuario.upsert({
-      where: { email: "admin@sinvello.es" },
-      update: {},
-      create: {
-        email: "admin@sinvello.es",
-        passwordHash,
-        nombre: "Administrador",
-        apellidos: "Central",
-        rol: Rol.CENTRAL,
-        // Central no necesita franquicias
-      },
-    }),
-    // Franquiciado Madrid
-    prisma.usuario.upsert({
-      where: { email: "madrid@sinvello.es" },
-      update: {},
-      create: {
-        email: "madrid@sinvello.es",
-        passwordHash,
-        nombre: "Carlos",
-        apellidos: "García López",
-        rol: Rol.FRANQUICIADO,
-        franquicias: {
-          create: {
-            franquiciaId: franquicias[0].id,
-          },
-        },
-      },
-    }),
-    // Técnico Madrid
-    prisma.usuario.upsert({
-      where: { email: "tecnico.madrid@sinvello.es" },
-      update: {},
-      create: {
-        email: "tecnico.madrid@sinvello.es",
-        passwordHash,
-        nombre: "Ana",
-        apellidos: "Martínez Ruiz",
-        rol: Rol.TECNICO,
-        franquicias: {
-          create: {
-            franquiciaId: franquicias[0].id,
-          },
-        },
-      },
-    }),
-    // Franquiciado Barcelona
-    prisma.usuario.upsert({
-      where: { email: "barcelona@sinvello.es" },
-      update: {},
-      create: {
-        email: "barcelona@sinvello.es",
-        passwordHash,
-        nombre: "María",
-        apellidos: "Fernández Vidal",
-        rol: Rol.FRANQUICIADO,
-        franquicias: {
-          create: {
-            franquiciaId: franquicias[1].id,
-          },
-        },
-      },
-    }),
-  ])
+  // Usuario Central (Alba)
+  await prisma.usuario.create({
+    data: {
+      email: "alba@naheri.es",
+      passwordHash: passwords.alba,
+      nombre: "Alba",
+      rol: Rol.CENTRAL,
+    },
+  })
 
-  console.log(`👤 Creados ${usuarios.length} usuarios`)
+  // Técnicos por franquicia
+  await prisma.usuario.create({
+    data: {
+      email: "albacete@naheri.es",
+      passwordHash: passwords.albacete,
+      nombre: "Técnico",
+      apellidos: "Albacete",
+      rol: Rol.TECNICO,
+      franquicias: {
+        create: {
+          franquiciaId: franquicias[0].id,
+        },
+      },
+    },
+  })
+
+  await prisma.usuario.create({
+    data: {
+      email: "pozoblanco@naheri.es",
+      passwordHash: passwords.pozoblanco,
+      nombre: "Técnico",
+      apellidos: "Pozoblanco",
+      rol: Rol.TECNICO,
+      franquicias: {
+        create: {
+          franquiciaId: franquicias[1].id,
+        },
+      },
+    },
+  })
+
+  await prisma.usuario.create({
+    data: {
+      email: "benimaclet@naheri.es",
+      passwordHash: passwords.benimaclet,
+      nombre: "Técnico",
+      apellidos: "Benimaclet",
+      rol: Rol.TECNICO,
+      franquicias: {
+        create: {
+          franquiciaId: franquicias[2].id,
+        },
+      },
+    },
+  })
+
+  await prisma.usuario.create({
+    data: {
+      email: "patraix@naheri.es",
+      passwordHash: passwords.patraix,
+      nombre: "Técnico",
+      apellidos: "Patraix",
+      rol: Rol.TECNICO,
+      franquicias: {
+        create: {
+          franquiciaId: franquicias[3].id,
+        },
+      },
+    },
+  })
+
+  console.log(`👤 Creados 5 usuarios`)
 
   // Crear productos
   const productosCreados = await Promise.all(
     productos.map(async (p: { nombre: string; precio_num: number; imagen: string; url: string }, index: number) => {
-      const sku = `SV-${String(index + 1).padStart(4, "0")}`
+      const sku = `NH-${String(index + 1).padStart(4, "0")}`
       return prisma.producto.upsert({
         where: { sku },
         update: {
@@ -195,7 +213,7 @@ async function main() {
           imagenUrl: p.imagen,
           categoria: getCategoria(p.nombre),
           sku,
-          descripcion: `Producto SinVello: ${p.nombre}`,
+          descripcion: `Producto Naheri: ${p.nombre}`,
         },
       })
     })
@@ -234,11 +252,11 @@ async function main() {
 
   // Crear webhook config
   await prisma.webhookConfig.upsert({
-    where: { apiKey: "sinvello-webhook-2024-secret" },
+    where: { apiKey: "naheri-webhook-2024-secret" },
     update: {},
     create: {
       nombre: "Webhook Consumo Semanal",
-      apiKey: "sinvello-webhook-2024-secret",
+      apiKey: "naheri-webhook-2024-secret",
       activo: true,
     },
   })
@@ -246,11 +264,12 @@ async function main() {
   console.log("🔐 Configuración de webhook creada")
 
   console.log("\n✅ Seed completado exitosamente!")
-  console.log("\n📋 Usuarios de prueba:")
-  console.log("   - admin@sinvello.es (Central) - Pass: sinvello2024")
-  console.log("   - madrid@sinvello.es (Franquiciado Madrid) - Pass: sinvello2024")
-  console.log("   - tecnico.madrid@sinvello.es (Técnico Madrid) - Pass: sinvello2024")
-  console.log("   - barcelona@sinvello.es (Franquiciado Barcelona) - Pass: sinvello2024")
+  console.log("\n📋 Usuarios creados:")
+  console.log("   - alba@naheri.es (CENTRAL)")
+  console.log("   - albacete@naheri.es (TECNICO - Albacete)")
+  console.log("   - pozoblanco@naheri.es (TECNICO - Pozoblanco)")
+  console.log("   - benimaclet@naheri.es (TECNICO - Benimaclet)")
+  console.log("   - patraix@naheri.es (TECNICO - Patraix)")
 }
 
 main()
