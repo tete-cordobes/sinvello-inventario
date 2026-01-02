@@ -486,6 +486,31 @@ export default function InventarioPage() {
               />
             </div>
 
+            {/* Franquicia */}
+            {franquicias.length > 0 && (
+              <div className="relative">
+                <Store
+                  size={18}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--sinvello-text)]"
+                />
+                <select
+                  value={franquiciaFiltro}
+                  onChange={(e) => setFranquiciaFiltro(e.target.value)}
+                  className="pl-10 pr-8 py-2.5 rounded-lg border border-[var(--border)]
+                             focus:outline-none focus:ring-2 focus:ring-[var(--sinvello-primary)]/20
+                             focus:border-[var(--sinvello-primary)] transition-all
+                             appearance-none bg-[var(--input)] text-[var(--foreground)] min-w-[180px]"
+                >
+                  <option value="">Todas las franquicias</option>
+                  {franquicias.map((f) => (
+                    <option key={f.id} value={f.id}>
+                      {f.nombre}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
             {/* Categoría */}
             <div className="relative">
               <Filter
@@ -564,7 +589,6 @@ export default function InventarioPage() {
                   if (bulkEditMode) {
                     setBulkEditMode(false)
                     setBulkChanges({})
-                    setFranquiciaFiltro("")
                   } else {
                     setBulkEditMode(true)
                   }
@@ -581,33 +605,6 @@ export default function InventarioPage() {
               </button>
             )}
           </div>
-
-          {/* Filtro de franquicia para modo bulk (CENTRAL ve todas, otros ven sus franquicias) */}
-          {bulkEditMode && franquicias.length > 0 && (
-            <div className="mt-4">
-              <div className="relative">
-                <Store
-                  size={18}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--sinvello-text)]"
-                />
-                <select
-                  value={franquiciaFiltro}
-                  onChange={(e) => setFranquiciaFiltro(e.target.value)}
-                  className="pl-10 pr-8 py-2.5 rounded-lg border border-[var(--border)]
-                             focus:outline-none focus:ring-2 focus:ring-[var(--sinvello-primary)]/20
-                             focus:border-[var(--sinvello-primary)] transition-all
-                             appearance-none bg-[var(--input)] text-[var(--foreground)] min-w-[200px]"
-                >
-                  <option value="">Todas las franquicias</option>
-                  {franquicias.map((f) => (
-                    <option key={f.id} value={f.id}>
-                      {f.nombre} ({f.codigo})
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          )}
 
           {/* Botones de acción cuando está en modo bulk */}
           {bulkEditMode && Object.keys(bulkChanges).length > 0 && (
