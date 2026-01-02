@@ -466,9 +466,10 @@ export default function InventarioPage() {
       <div className="p-6">
         {/* Filtros */}
         <div className="card p-4 mb-6 bg-gradient-to-br from-[var(--card)] to-[var(--muted)]">
-          <div className="flex flex-col md:flex-row gap-4">
+          {/* Fila 1: Filtros de búsqueda */}
+          <div className="flex flex-col lg:flex-row gap-3 mb-4">
             {/* Búsqueda */}
-            <div className="relative flex-1">
+            <div className="relative flex-1 min-w-0">
               <Search
                 size={18}
                 className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--sinvello-text)]"
@@ -486,77 +487,86 @@ export default function InventarioPage() {
               />
             </div>
 
-            {/* Franquicia */}
-            {franquicias.length > 0 && (
+            {/* Contenedor de selectores */}
+            <div className="flex flex-col sm:flex-row gap-3">
+              {/* Franquicia */}
+              {franquicias.length > 0 && (
+                <div className="relative">
+                  <Store
+                    size={18}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--sinvello-text)]"
+                  />
+                  <select
+                    value={franquiciaFiltro}
+                    onChange={(e) => setFranquiciaFiltro(e.target.value)}
+                    className="w-full sm:w-auto pl-10 pr-8 py-2.5 rounded-lg border border-[var(--border)]
+                               focus:outline-none focus:ring-2 focus:ring-[var(--sinvello-primary)]/20
+                               focus:border-[var(--sinvello-primary)] transition-all
+                               appearance-none bg-[var(--input)] text-[var(--foreground)] min-w-[180px]"
+                  >
+                    <option value="">Todas las franquicias</option>
+                    {franquicias.map((f) => (
+                      <option key={f.id} value={f.id}>
+                        {f.nombre}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Categoría */}
               <div className="relative">
-                <Store
+                <Filter
                   size={18}
                   className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--sinvello-text)]"
                 />
                 <select
-                  value={franquiciaFiltro}
-                  onChange={(e) => setFranquiciaFiltro(e.target.value)}
-                  className="pl-10 pr-8 py-2.5 rounded-lg border border-[var(--border)]
+                  value={categoriaFiltro}
+                  onChange={(e) => setCategoriaFiltro(e.target.value)}
+                  className="w-full sm:w-auto pl-10 pr-8 py-2.5 rounded-lg border border-[var(--border)]
                              focus:outline-none focus:ring-2 focus:ring-[var(--sinvello-primary)]/20
                              focus:border-[var(--sinvello-primary)] transition-all
                              appearance-none bg-[var(--input)] text-[var(--foreground)] min-w-[180px]"
                 >
-                  <option value="">Todas las franquicias</option>
-                  {franquicias.map((f) => (
-                    <option key={f.id} value={f.id}>
-                      {f.nombre}
+                  <option value="">Todas las categorías</option>
+                  {categorias.map((cat) => (
+                    <option key={cat.nombre} value={cat.nombre}>
+                      {cat.nombre} ({cat.count})
                     </option>
                   ))}
                 </select>
               </div>
-            )}
 
-            {/* Categoría */}
-            <div className="relative">
-              <Filter
-                size={18}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--sinvello-text)]"
-              />
-              <select
-                value={categoriaFiltro}
-                onChange={(e) => setCategoriaFiltro(e.target.value)}
-                className="pl-10 pr-8 py-2.5 rounded-lg border border-[var(--border)]
-                           focus:outline-none focus:ring-2 focus:ring-[var(--sinvello-primary)]/20
-                           focus:border-[var(--sinvello-primary)] transition-all
-                           appearance-none bg-[var(--input)] text-[var(--foreground)] min-w-[180px]"
+              {/* Stock bajo */}
+              <button
+                onClick={() => setStockBajo(!stockBajo)}
+                className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border transition-all
+                           shadow-sm hover:shadow-md active:scale-95 whitespace-nowrap ${
+                  stockBajo
+                    ? "bg-gradient-to-r from-red-500 to-red-600 border-red-400 text-white"
+                    : "border-[var(--border)] text-[var(--foreground)] bg-[var(--input)] hover:bg-[var(--muted)]"
+                }`}
               >
-                <option value="">Todas las categorías</option>
-                {categorias.map((cat) => (
-                  <option key={cat.nombre} value={cat.nombre}>
-                    {cat.nombre} ({cat.count})
-                  </option>
-                ))}
-              </select>
+                <AlertTriangle size={18} />
+                <span>Stock bajo</span>
+                {stockBajoCount > 0 && (
+                  <span
+                    className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                      stockBajo ? "bg-red-200 text-red-800" : "bg-red-100 text-red-700"
+                    }`}
+                  >
+                    {stockBajoCount}
+                  </span>
+                )}
+              </button>
             </div>
+          </div>
 
-            {/* Stock bajo */}
-            <button
-              onClick={() => setStockBajo(!stockBajo)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border transition-all
-                         shadow-sm hover:shadow-md active:scale-95 ${
-                stockBajo
-                  ? "bg-gradient-to-r from-red-500 to-red-600 border-red-400 text-white"
-                  : "border-[var(--border)] text-[var(--foreground)] bg-[var(--input)] hover:bg-[var(--muted)]"
-              }`}
-            >
-              <AlertTriangle size={18} />
-              <span>Stock bajo</span>
-              {stockBajoCount > 0 && (
-                <span
-                  className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                    stockBajo ? "bg-red-200 text-red-800" : "bg-red-100 text-red-700"
-                  }`}
-                >
-                  {stockBajoCount}
-                </span>
-              )}
-            </button>
+          {/* Separador */}
+          <div className="border-t border-[var(--border)] my-3"></div>
 
+          {/* Fila 2: Botones de acción */}
+          <div className="flex flex-wrap gap-3">
             {/* Botón exportar Excel */}
             <button
               onClick={handleExportExcel}
@@ -567,7 +577,7 @@ export default function InventarioPage() {
                          disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isExporting ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
-              <span>{isExporting ? "Exportando..." : "Excel"}</span>
+              <span>{isExporting ? "Exportando..." : "Exportar Excel"}</span>
             </button>
 
             {/* Botón exportar Google Sheets */}
@@ -581,6 +591,9 @@ export default function InventarioPage() {
               <FileSpreadsheet size={18} />
               <span>Google Sheets</span>
             </button>
+
+            {/* Spacer para empujar bulk edit a la derecha en desktop */}
+            <div className="hidden md:flex flex-1"></div>
 
             {/* Botón modo bulk */}
             {(session.user.rol === Rol.CENTRAL || session.user.rol === Rol.FRANQUICIADO || session.user.rol === Rol.TECNICO) && (
@@ -601,14 +614,14 @@ export default function InventarioPage() {
                 }`}
               >
                 {bulkEditMode ? <X size={18} /> : <Edit3 size={18} />}
-                <span>{bulkEditMode ? "Cancelar bulk" : "Edición bulk"}</span>
+                <span>{bulkEditMode ? "Cancelar edición" : "Edición masiva"}</span>
               </button>
             )}
           </div>
 
           {/* Botones de acción cuando está en modo bulk */}
           {bulkEditMode && Object.keys(bulkChanges).length > 0 && (
-            <div className="flex gap-2 mt-4">
+            <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-[var(--border)]">
               <button
                 onClick={handleBulkSave}
                 disabled={isSaving}
@@ -628,7 +641,7 @@ export default function InventarioPage() {
                            hover:from-gray-700 hover:to-gray-800 transition-all active:scale-95 shadow-md"
               >
                 <X size={18} />
-                <span>Descartar cambios</span>
+                <span>Descartar</span>
               </button>
             </div>
           )}

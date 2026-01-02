@@ -405,15 +405,17 @@ export default function ProductosPage() {
                         {producto.precio ? `${producto.precio.toFixed(2)} €` : "-"}
                       </td>
                       <td className="py-4 px-4 text-center">
-                        <span
-                          className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            producto.activo
-                              ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                              : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
-                          }`}
-                        >
-                          {producto.activo ? "Activo" : "Inactivo"}
-                        </span>
+                        {producto.activo ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                            Activo
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 border border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700">
+                            <span className="w-1.5 h-1.5 rounded-full bg-gray-400"></span>
+                            Inactivo
+                          </span>
+                        )}
                       </td>
                       <td className="py-4 px-4">
                         <div className="flex items-center justify-center gap-2">
