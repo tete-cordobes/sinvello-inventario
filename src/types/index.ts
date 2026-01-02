@@ -15,6 +15,7 @@ declare module "next-auth" {
         id: string
         nombre: string
       }>
+      gmail?: string
     }
   }
 
@@ -30,6 +31,7 @@ declare module "next-auth" {
       id: string
       nombre: string
     }>
+    gmail?: string
   }
 }
 

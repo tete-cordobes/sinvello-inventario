@@ -495,8 +495,8 @@ export default function InventarioPage() {
             )}
           </div>
 
-          {/* Filtro de franquicia para modo bulk (solo CENTRAL) */}
-          {bulkEditMode && session.user.rol === Rol.CENTRAL && franquicias.length > 0 && (
+          {/* Filtro de franquicia para modo bulk (CENTRAL ve todas, otros ven sus franquicias) */}
+          {bulkEditMode && franquicias.length > 0 && (
             <div className="mt-4">
               <div className="relative">
                 <Store

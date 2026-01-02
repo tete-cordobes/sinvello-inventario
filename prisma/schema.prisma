@@ -51,9 +51,11 @@ model Franquicia {
 model Usuario {
   id           String   @id @default(cuid())
   email        String   @unique
-  passwordHash String
+  passwordHash String?  // Opcional si usa Google OAuth
   nombre       String
   apellidos    String?
+  gmail        String?  // Email de Google para exportar a Sheets
+  googleId     String?  @unique // ID de Google para OAuth
   rol          Rol      @default(TECNICO)
   activo       Boolean  @default(true)
   createdAt    DateTime @default(now())
@@ -64,6 +66,7 @@ model Usuario {
 
   @@index([email])
   @@index([rol])
+  @@index([googleId])
 }
 
 // Relación muchos a muchos entre Usuarios y Franquicias

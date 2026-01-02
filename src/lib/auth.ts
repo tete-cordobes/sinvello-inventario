@@ -1,5 +1,6 @@
 import NextAuth, { User } from "next-auth"
 import Credentials from "next-auth/providers/credentials"
+import Google from "next-auth/providers/google"
 import { compare } from "bcryptjs"
 import { prisma } from "./prisma"
 import { Rol } from "@prisma/client"
@@ -10,6 +11,7 @@ declare module "next-auth" {
       id: string
       nombre: string
     }>
+    gmail?: string
   }
 
   interface Session {
@@ -25,12 +27,17 @@ declare module "next-auth" {
         id: string
         nombre: string
       }>
+      gmail?: string
     }
   }
 }
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
+    Google({
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+    }),
     Credentials({
       name: "credentials",
       credentials: {
@@ -67,6 +74,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             throw new Error("Usuario desactivado")
           }
 
+          if (!user.passwordHash) {
+            throw new Error("Este usuario solo puede iniciar sesión con Google")
+          }
+
           const isValidPassword = await compare(
             credentials.password as string,
             user.passwordHash
@@ -90,6 +101,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
               id: uf.franquicia.id,
               nombre: uf.franquicia.nombre,
             })),
+            gmail: user.gmail ?? undefined,
           }
         } catch (error) {
           console.error("Error en authorize:", error)
@@ -99,8 +111,89 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
+    async signIn({ user, account }) {
+      // Si es login con Google, verificar que el usuario existe y tiene gmail configurado
+      if (account?.provider === "google") {
+        const email = user.email
+        if (!email) return false
+
+        // Buscar usuario por googleId o por gmail
+        const existingUser = await prisma.usuario.findFirst({
+          where: {
+            OR: [
+              { googleId: account.providerAccountId },
+              { gmail: email },
+              { email: email },
+            ],
+          },
+        })
+
+        if (!existingUser) {
+          // Usuario no existe - no permitir registro automático
+          return "/login?error=NoAccount"
+        }
+
+        if (!existingUser.activo) {
+          return "/login?error=UserDisabled"
+        }
+
+        // Actualizar googleId si no está configurado
+        if (!existingUser.googleId) {
+          await prisma.usuario.update({
+            where: { id: existingUser.id },
+            data: { 
+              googleId: account.providerAccountId,
+              gmail: email,
+            },
+          })
+        }
+
+        return true
+      }
+
+      return true
+    },
+    async jwt({ token, user, account }) {
+      if (account?.provider === "google" && user?.email) {
+        // Buscar datos completos del usuario
+        const dbUser = await prisma.usuario.findFirst({
+          where: {
+            OR: [
+              { googleId: account.providerAccountId },
+              { gmail: user.email },
+              { email: user.email },
+            ],
+          },
+          include: {
+            franquicias: {
+              include: {
+                franquicia: {
+                  select: {
+                    id: true,
+                    nombre: true,
+                  },
+                },
+              },
+            },
+          },
+        })
+
+        if (dbUser) {
+          const primeraFranquicia = dbUser.franquicias[0]?.franquicia
+          token.id = dbUser.id
+          token.email = dbUser.email
+          token.nombre = dbUser.nombre
+          token.apellidos = dbUser.apellidos
+          token.rol = dbUser.rol
+          token.franquiciaId = primeraFranquicia?.id
+          token.franquiciaNombre = primeraFranquicia?.nombre
+          token.franquicias = dbUser.franquicias.map((uf) => ({
+            id: uf.franquicia.id,
+            nombre: uf.franquicia.nombre,
+          }))
+          token.gmail = dbUser.gmail
+        }
+      } else if (user) {
         token.id = user.id
         token.email = user.email!
         token.nombre = user.nombre
@@ -109,6 +202,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.franquiciaId = user.franquiciaId
         token.franquiciaNombre = user.franquiciaNombre
         token.franquicias = user.franquicias
+        token.gmail = user.gmail
       }
       return token
     },
@@ -123,6 +217,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         franquiciaId: token.franquiciaId as string | undefined,
         franquiciaNombre: token.franquiciaNombre as string | undefined,
         franquicias: token.franquicias as Array<{ id: string; nombre: string }> | undefined,
+        gmail: token.gmail as string | undefined,
       }
       return session
     },
@@ -168,7 +263,7 @@ export function getMenuItemsByRole(rol: Rol): string[] {
     case Rol.CENTRAL:
       return [...baseItems, "movimientos", "reportes", "franquicias", "usuarios"]
     case Rol.FRANQUICIADO:
-      return [...baseItems, "movimientos", "reportes"]
+      return [...baseItems, "movimientos", "reportes", "usuarios"]
     case Rol.TECNICO:
       return [...baseItems, "movimientos"]
     default:
