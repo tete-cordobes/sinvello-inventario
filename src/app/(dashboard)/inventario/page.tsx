@@ -5,7 +5,7 @@ import { useSession } from "next-auth/react"
 import { Header } from "@/components/layout/Header"
 import ProductCard from "@/components/inventario/ProductCard"
 import MovimientoModal from "@/components/inventario/MovimientoModal"
-import { Search, Filter, AlertTriangle, Package, Loader2, Edit3, X, Save, ArrowLeft, Store, ChevronRight } from "lucide-react"
+import { Search, Filter, AlertTriangle, Package, Loader2, Edit3, X, Save, ArrowLeft, Store, ChevronRight, Download, FileSpreadsheet } from "lucide-react"
 import { Rol } from "@prisma/client"
 import { PageSkeleton } from "@/components/ui/Skeleton"
 import { showToast } from "@/components/ui/Toast"
@@ -80,6 +80,7 @@ export default function InventarioPage() {
     stockMaximo?: number
   }>>({})
   const [isSaving, setIsSaving] = useState(false)
+  const [isExporting, setIsExporting] = useState(false)
 
   const fetchInventario = useCallback(async () => {
     try {
@@ -224,6 +225,67 @@ export default function InventarioPage() {
   const stockBajoCount = inventario.filter(
     (item) => item.cantidadActual <= item.stockMinimo
   ).length
+
+  const handleExportExcel = async () => {
+    setIsExporting(true)
+    try {
+      const params = new URLSearchParams()
+      if (franquiciaFiltro) params.set("franquiciaId", franquiciaFiltro)
+      
+      const response = await fetch(`/api/export/inventario?${params}`)
+      
+      if (!response.ok) {
+        throw new Error("Error al exportar")
+      }
+      
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = response.headers.get("Content-Disposition")?.split("filename=")[1]?.replace(/"/g, "") || "inventario.xlsx"
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+      
+      showToast({
+        title: "Exportación completada",
+        description: "El archivo Excel se ha descargado correctamente",
+      })
+    } catch (err) {
+      showToast({
+        title: "Error al exportar",
+        description: err instanceof Error ? err.message : "No se pudo exportar el inventario",
+        type: "error",
+      })
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
+  const handleExportSheets = async () => {
+    try {
+      const params = new URLSearchParams()
+      params.set("type", "inventario")
+      if (franquiciaFiltro) params.set("franquiciaId", franquiciaFiltro)
+      
+      const response = await fetch(`/api/export/sheets/auth?${params}`)
+      const data = await response.json()
+      
+      if (!response.ok) {
+        throw new Error(data.error || "Error al conectar con Google")
+      }
+      
+      // Abrir popup de autorización de Google
+      window.open(data.authUrl, "_blank", "width=500,height=600")
+    } catch (err) {
+      showToast({
+        title: "Error",
+        description: err instanceof Error ? err.message : "No se pudo conectar con Google",
+        type: "error",
+      })
+    }
+  }
 
   // Filtrar inventario por franquicia (para bulk mode)
   const inventarioFiltrado = franquiciaFiltro 
@@ -468,6 +530,31 @@ export default function InventarioPage() {
                   {stockBajoCount}
                 </span>
               )}
+            </button>
+
+            {/* Botón exportar Excel */}
+            <button
+              onClick={handleExportExcel}
+              disabled={isExporting}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-lg border transition-all
+                         shadow-sm hover:shadow-md active:scale-95
+                         border-[var(--border)] text-[var(--foreground)] bg-[var(--input)] hover:bg-[var(--muted)]
+                         disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isExporting ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
+              <span>{isExporting ? "Exportando..." : "Excel"}</span>
+            </button>
+
+            {/* Botón exportar Google Sheets */}
+            <button
+              onClick={handleExportSheets}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-lg border transition-all
+                         shadow-sm hover:shadow-md active:scale-95
+                         bg-gradient-to-r from-green-500 to-green-600 border-green-400 text-white
+                         hover:from-green-600 hover:to-green-700"
+            >
+              <FileSpreadsheet size={18} />
+              <span>Google Sheets</span>
             </button>
 
             {/* Botón modo bulk */}

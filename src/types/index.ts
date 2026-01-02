@@ -1,42 +1,5 @@
-import { Rol } from "@prisma/client"
-
-// Extensión de tipos para NextAuth
-declare module "next-auth" {
-  interface Session {
-    user: {
-      id: string
-      email: string
-      nombre: string
-      apellidos?: string
-      rol: string
-      franquiciaId?: string
-      franquiciaNombre?: string
-      franquicias?: Array<{
-        id: string
-        nombre: string
-      }>
-      gmail?: string
-    }
-  }
-
-  interface User {
-    id: string
-    email: string
-    nombre: string
-    apellidos?: string
-    rol: string
-    franquiciaId?: string
-    franquiciaNombre?: string
-    franquicias?: Array<{
-      id: string
-      nombre: string
-    }>
-    gmail?: string
-  }
-}
-
 // JWT types are handled via type casting in auth.ts
-// This avoids module resolution issues with next-auth v5
+// Session types are declared in auth.ts to avoid conflicts
 
 // Tipos para la API
 export interface ApiResponse<T = unknown> {

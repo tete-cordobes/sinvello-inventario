@@ -14,7 +14,9 @@ import {
   ArrowUpCircle,
   ArrowDownCircle,
   Settings,
+  FileSpreadsheet,
 } from "lucide-react"
+import { showToast } from "@/components/ui/Toast"
 import { formatDate } from "@/lib/utils"
 import { Rol } from "@prisma/client"
 
@@ -69,6 +71,7 @@ export default function MovimientosPage() {
   const [tipoFiltro, setTipoFiltro] = useState("")
   const [desde, setDesde] = useState("")
   const [hasta, setHasta] = useState("")
+  const [isExporting, setIsExporting] = useState(false)
 
   const fetchMovimientos = useCallback(async () => {
     try {
@@ -153,6 +156,62 @@ export default function MovimientosPage() {
     link.href = url
     link.download = `movimientos_${new Date().toISOString().split("T")[0]}.csv`
     link.click()
+  }
+
+  const exportarExcel = async () => {
+    setIsExporting(true)
+    try {
+      const params = new URLSearchParams()
+      if (tipoFiltro) params.set("tipo", tipoFiltro)
+      if (desde) params.set("desde", desde)
+      if (hasta) params.set("hasta", hasta)
+      
+      const response = await fetch(`/api/export/movimientos?${params}`)
+      
+      if (!response.ok) {
+        throw new Error("Error al exportar")
+      }
+      
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = response.headers.get("Content-Disposition")?.split("filename=")[1]?.replace(/"/g, "") || "movimientos.xlsx"
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error al exportar")
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
+  const exportarSheets = async () => {
+    try {
+      const params = new URLSearchParams()
+      params.set("type", "movimientos")
+      if (tipoFiltro) params.set("tipo", tipoFiltro)
+      if (desde) params.set("desde", desde)
+      if (hasta) params.set("hasta", hasta)
+      
+      const response = await fetch(`/api/export/sheets/auth?${params}`)
+      const data = await response.json()
+      
+      if (!response.ok) {
+        throw new Error(data.error || "Error al conectar con Google")
+      }
+      
+      // Abrir popup de autorización de Google
+      window.open(data.authUrl, "_blank", "width=500,height=600")
+    } catch (err) {
+      showToast({
+        title: "Error",
+        description: err instanceof Error ? err.message : "No se pudo conectar con Google",
+        type: "error",
+      })
+    }
   }
 
   if (!session) return null
@@ -245,18 +304,44 @@ export default function MovimientosPage() {
               </div>
             </div>
 
-            {/* Exportar */}
+            {/* Exportar CSV */}
             <button
               onClick={exportarCSV}
               disabled={movimientos.length === 0}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-lg
+                         border border-[var(--border)] text-[var(--foreground)]
+                         bg-[var(--input)] hover:bg-[var(--muted)]
+                         disabled:opacity-50 disabled:cursor-not-allowed
+                         transition-all"
+            >
+              <Download size={18} />
+              CSV
+            </button>
+
+            {/* Exportar Excel */}
+            <button
+              onClick={exportarExcel}
+              disabled={isExporting}
               className="flex items-center gap-2 px-4 py-2.5 rounded-lg
                          bg-[var(--sinvello-primary)] text-white font-medium
                          hover:bg-[var(--sinvello-primary-hover)]
                          disabled:opacity-50 disabled:cursor-not-allowed
                          transition-all"
             >
-              <Download size={18} />
-              Exportar CSV
+              {isExporting ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
+              {isExporting ? "Exportando..." : "Excel"}
+            </button>
+
+            {/* Exportar Google Sheets */}
+            <button
+              onClick={exportarSheets}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-lg
+                         bg-gradient-to-r from-green-500 to-green-600 text-white font-medium
+                         hover:from-green-600 hover:to-green-700
+                         transition-all"
+            >
+              <FileSpreadsheet size={18} />
+              Google Sheets
             </button>
           </div>
         </div>

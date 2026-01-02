@@ -24,6 +24,7 @@ import { Rol } from "@prisma/client"
 interface Usuario {
   id: string
   email: string
+  gmail: string | null
   nombre: string
   apellidos: string | null
   rol: "CENTRAL" | "FRANQUICIADO" | "TECNICO"
@@ -66,6 +67,7 @@ export default function UsuariosPage() {
     password: "",
     nombre: "",
     apellidos: "",
+    gmail: "",
     rol: "TECNICO" as "CENTRAL" | "FRANQUICIADO" | "TECNICO",
     franquiciasIds: [] as string[],
   })
@@ -154,12 +156,14 @@ export default function UsuariosPage() {
       ? {
           nombre: formData.nombre,
           apellidos: formData.apellidos || null,
+          gmail: formData.gmail || null,
           rol: formData.rol,
           franquiciasIds: formData.rol === "CENTRAL" ? [] : franquiciasIds,
           ...(formData.password && { password: formData.password }),
         }
       : {
           ...formData,
+          gmail: formData.gmail || null,
           franquiciasIds: formData.rol === "CENTRAL" ? [] : franquiciasIds,
         }
 
@@ -178,6 +182,7 @@ export default function UsuariosPage() {
           password: "",
           nombre: "",
           apellidos: "",
+          gmail: "",
           rol: "TECNICO",
           franquiciasIds: [],
         })
@@ -198,6 +203,7 @@ export default function UsuariosPage() {
       password: "",
       nombre: usuario.nombre,
       apellidos: usuario.apellidos || "",
+      gmail: usuario.gmail || "",
       rol: usuario.rol,
       franquiciasIds: usuario.franquicias.map((f) => f.id),
     })
@@ -277,6 +283,7 @@ export default function UsuariosPage() {
               password: "",
               nombre: "",
               apellidos: "",
+              gmail: "",
               rol: session?.user?.rol === "FRANQUICIADO" ? "TECNICO" : "TECNICO",
               franquiciasIds: [],
             })
@@ -504,6 +511,23 @@ export default function UsuariosPage() {
                     placeholder="García"
                   />
                 </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-[var(--foreground)] mb-1">
+                  Gmail (para Google Sheets)
+                </label>
+                <input
+                  type="email"
+                  value={formData.gmail}
+                  onChange={(e) =>
+                    setFormData({ ...formData, gmail: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border border-[var(--border)] rounded-lg focus:ring-2 focus:ring-[var(--sinvello-primary)] focus:border-[var(--sinvello-primary)] bg-[var(--input)] text-[var(--foreground)]"
+                  placeholder="usuario@gmail.com"
+                />
+                <p className="text-xs text-[var(--muted-foreground)] mt-1">
+                  Email de Google para login y exportar a Sheets
+                </p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-[var(--foreground)] mb-1">

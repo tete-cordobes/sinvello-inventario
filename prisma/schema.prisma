@@ -9,21 +9,21 @@ datasource db {
 
 // Roles de usuario
 enum Rol {
-  CENTRAL      // Ve todas las franquicias, acceso total
+  CENTRAL // Ve todas las franquicias, acceso total
   FRANQUICIADO // Ve solo su franquicia, reportes
-  TECNICO      // Solo inventario de su franquicia, registrar consumo/reposición
+  TECNICO // Solo inventario de su franquicia, registrar consumo/reposición
 }
 
 // Tipo de movimiento de stock
 enum TipoMovimiento {
   REPOSICION // Entrada de stock
-  CONSUMO    // Salida de stock
-  AJUSTE     // Ajuste manual (corrección)
+  CONSUMO // Salida de stock
+  AJUSTE // Ajuste manual (corrección)
 }
 
 // Origen del movimiento
 enum OrigenMovimiento {
-  MANUAL  // Registrado manualmente por usuario
+  MANUAL // Registrado manualmente por usuario
   WEBHOOK // Recibido vía API externa
   SISTEMA // Generado automáticamente
 }
@@ -40,8 +40,8 @@ model Franquicia {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  usuarios       UsuarioFranquicia[]
-  inventario     Inventario[]
+  usuarios   UsuarioFranquicia[]
+  inventario Inventario[]
 
   @@index([codigo])
   @@index([activo])
@@ -51,33 +51,30 @@ model Franquicia {
 model Usuario {
   id           String   @id @default(cuid())
   email        String   @unique
-  passwordHash String?  // Opcional si usa Google OAuth
+  passwordHash String?
   nombre       String
   apellidos    String?
-  gmail        String?  // Email de Google para exportar a Sheets
-  googleId     String?  @unique // ID de Google para OAuth
   rol          Rol      @default(TECNICO)
   activo       Boolean  @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  franquicias   UsuarioFranquicia[]
-  movimientos   Movimiento[]
+  franquicias UsuarioFranquicia[]
+  movimientos Movimiento[]
 
   @@index([email])
   @@index([rol])
-  @@index([googleId])
 }
 
 // Relación muchos a muchos entre Usuarios y Franquicias
 model UsuarioFranquicia {
-  id            String   @id @default(cuid())
-  usuarioId     String
-  franquiciaId  String
-  createdAt     DateTime @default(now())
+  id           String   @id @default(cuid())
+  usuarioId    String
+  franquiciaId String
+  createdAt    DateTime @default(now())
 
-  usuario     Usuario     @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
-  franquicia  Franquicia  @relation(fields: [franquiciaId], references: [id], onDelete: Cascade)
+  usuario    Usuario    @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  franquicia Franquicia @relation(fields: [franquiciaId], references: [id], onDelete: Cascade)
 
   @@unique([usuarioId, franquiciaId])
   @@index([usuarioId])
@@ -110,7 +107,7 @@ model Inventario {
   cantidadActual Int      @default(0)
   stockMinimo    Int      @default(5)
   stockMaximo    Int      @default(100)
-  ubicacion      String?  // Ej: "Almacén A", "Estante 3"
+  ubicacion      String? // Ej: "Almacén A", "Estante 3"
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -132,9 +129,9 @@ model Inventario {
 model Movimiento {
   id               String           @id @default(cuid())
   tipo             TipoMovimiento
-  cantidad         Int              // Cantidad del movimiento (siempre positivo)
-  cantidadAnterior Int              // Stock antes del movimiento
-  cantidadNueva    Int              // Stock después del movimiento
+  cantidad         Int // Cantidad del movimiento (siempre positivo)
+  cantidadAnterior Int // Stock antes del movimiento
+  cantidadNueva    Int // Stock después del movimiento
   notas            String?
   origen           OrigenMovimiento @default(MANUAL)
   createdAt        DateTime         @default(now())

@@ -66,12 +66,13 @@ export async function PATCH(
     }
 
     const body = await request.json()
-    const { nombre, apellidos, rol, franquiciasIds, activo, password } = body
+    const { nombre, apellidos, gmail, rol, franquiciasIds, activo, password } = body
 
     const updateData: Record<string, unknown> = {}
 
     if (nombre) updateData.nombre = nombre
     if (apellidos !== undefined) updateData.apellidos = apellidos
+    if (gmail !== undefined) updateData.gmail = gmail || null
     if (rol) updateData.rol = rol
     if (activo !== undefined) updateData.activo = activo
     if (password) updateData.passwordHash = await bcrypt.hash(password, 12)

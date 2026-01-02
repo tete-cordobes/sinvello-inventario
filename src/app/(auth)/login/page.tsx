@@ -151,7 +151,7 @@ function LoginForm() {
 
       {/* Footer */}
       <p className="text-center text-[var(--sinvello-text)] text-sm mt-6">
-        Sistema de gestión de inventario para franquicias SinVello!
+        Sistema de gestión de inventario para franquicias SinVello
       </p>
     </div>
   )

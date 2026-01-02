@@ -43,6 +43,7 @@ export async function GET() {
         rol: usuario.rol,
         activo: usuario.activo,
         createdAt: usuario.createdAt,
+
         franquicias: usuario.franquicias.map((uf) => ({
           id: uf.franquicia.id,
           nombre: uf.franquicia.nombre,
@@ -117,6 +118,7 @@ export async function GET() {
         rol: usuario.rol,
         activo: usuario.activo,
         createdAt: usuario.createdAt,
+
         franquicias: usuario.franquicias.map((uf) => ({
           id: uf.franquicia.id,
           nombre: uf.franquicia.nombre,
@@ -259,6 +261,7 @@ export async function POST(request: Request) {
       rol: usuario.rol,
       activo: usuario.activo,
       createdAt: usuario.createdAt,
+
       franquicias: usuario.franquicias.map((uf) => ({
         id: uf.franquicia.id,
         nombre: uf.franquicia.nombre,
