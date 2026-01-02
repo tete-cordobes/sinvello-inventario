@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
     const franquiciaId = searchParams.get("franquiciaId")
 
     // Determinar qué franquicia(s) puede ver el usuario
-    let whereClause: Record<string, unknown> = {}
+    const whereClause: Record<string, unknown> = {}
 
     if (session.user.rol === Rol.CENTRAL) {
       // Central puede ver todas, pero puede filtrar por franquicia
