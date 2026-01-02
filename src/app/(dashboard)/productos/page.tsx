@@ -261,7 +261,7 @@ export default function ProductosPage() {
             <div className="relative">
               <Filter
                 size={18}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--sinvello-text)]"
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--muted-foreground)]"
               />
               <select
                 value={categoriaFiltro}
@@ -269,7 +269,7 @@ export default function ProductosPage() {
                 className="pl-10 pr-8 py-2.5 rounded-lg border border-[var(--border)]
                            focus:outline-none focus:ring-2 focus:ring-[var(--sinvello-primary)]/20
                            focus:border-[var(--sinvello-primary)] transition-all
-                           appearance-none bg-[var(--input)] text-[var(--foreground)] min-w-[180px]"
+                           appearance-none bg-[var(--card)] text-[var(--foreground)] min-w-[180px]"
               >
                 <option value="">Todas las categorías</option>
                 {categoriasExistentes.map((cat) => (
@@ -406,13 +406,13 @@ export default function ProductosPage() {
                       </td>
                       <td className="py-4 px-4 text-center">
                         {producto.activo ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+                            <span className="w-1.5 h-1.5 rounded-full bg-green-600 dark:bg-green-400"></span>
                             Activo
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 border border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700">
-                            <span className="w-1.5 h-1.5 rounded-full bg-gray-400"></span>
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300">
+                            <span className="w-1.5 h-1.5 rounded-full bg-gray-500"></span>
                             Inactivo
                           </span>
                         )}
