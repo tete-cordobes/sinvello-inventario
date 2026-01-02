@@ -471,7 +471,7 @@ export default function InventarioPage() {
             </button>
 
             {/* Botón modo bulk */}
-            {session.user.rol === Rol.CENTRAL || session.user.rol === Rol.FRANQUICIADO || session.user.rol === Rol.TECNICO && (
+            {(session.user.rol === Rol.CENTRAL || session.user.rol === Rol.FRANQUICIADO || session.user.rol === Rol.TECNICO) && (
               <button
                 onClick={() => {
                   if (bulkEditMode) {
