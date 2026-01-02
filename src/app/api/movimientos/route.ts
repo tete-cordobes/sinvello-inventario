@@ -41,13 +41,32 @@ export async function GET(request: NextRequest) {
         whereClause.inventario = { franquiciaId }
       }
     } else {
-      if (!session.user.franquiciaId) {
+      // Obtener franquicias actuales de la BD (no del JWT cacheado)
+      const usuarioConFranquicias = await prisma.usuario.findUnique({
+        where: { id: session.user.id },
+        include: {
+          franquicias: {
+            select: {
+              franquiciaId: true,
+            },
+          },
+        },
+      })
+
+      if (!usuarioConFranquicias || usuarioConFranquicias.franquicias.length === 0) {
         return NextResponse.json(
           { error: "Usuario sin franquicia asignada" },
           { status: 400 }
         )
       }
-      whereClause.inventario = { franquiciaId: session.user.franquiciaId }
+
+      const franquiciaIds = usuarioConFranquicias.franquicias.map(f => f.franquiciaId)
+      
+      if (franquiciaIds.length === 1) {
+        whereClause.inventario = { franquiciaId: franquiciaIds[0] }
+      } else {
+        whereClause.inventario = { franquiciaId: { in: franquiciaIds } as unknown as string }
+      }
     }
 
     // Filtros adicionales

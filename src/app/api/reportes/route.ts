@@ -60,7 +60,26 @@ export async function GET(request: NextRequest) {
     if (session.user.rol === Rol.CENTRAL && franquiciaId) {
       whereClause.inventario = { franquiciaId }
     } else if (session.user.rol === Rol.FRANQUICIADO) {
-      whereClause.inventario = { franquiciaId: session.user.franquiciaId! }
+      // Obtener franquicias actuales de la BD (no del JWT cacheado)
+      const usuarioConFranquicias = await prisma.usuario.findUnique({
+        where: { id: session.user.id },
+        include: {
+          franquicias: {
+            select: {
+              franquiciaId: true,
+            },
+          },
+        },
+      })
+
+      if (usuarioConFranquicias && usuarioConFranquicias.franquicias.length > 0) {
+        const franquiciaIds = usuarioConFranquicias.franquicias.map(f => f.franquiciaId)
+        if (franquiciaIds.length === 1) {
+          whereClause.inventario = { franquiciaId: franquiciaIds[0] }
+        } else {
+          whereClause.inventario = { franquiciaId: { in: franquiciaIds } as unknown as string }
+        }
+      }
     }
 
     // Obtener movimientos del período

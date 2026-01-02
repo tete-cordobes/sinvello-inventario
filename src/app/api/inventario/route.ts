@@ -25,14 +25,33 @@ export async function GET(request: NextRequest) {
         whereClause.franquiciaId = franquiciaId
       }
     } else {
-      // Franquiciado y Técnico solo ven su franquicia
-      if (!session.user.franquiciaId) {
+      // Franquiciado y Técnico: obtener franquicias actuales de la BD (no del JWT cacheado)
+      const usuarioConFranquicias = await prisma.usuario.findUnique({
+        where: { id: session.user.id },
+        include: {
+          franquicias: {
+            select: {
+              franquiciaId: true,
+            },
+          },
+        },
+      })
+
+      if (!usuarioConFranquicias || usuarioConFranquicias.franquicias.length === 0) {
         return NextResponse.json(
           { error: "Usuario sin franquicia asignada" },
           { status: 400 }
         )
       }
-      whereClause.franquiciaId = session.user.franquiciaId
+
+      const franquiciaIds = usuarioConFranquicias.franquicias.map(f => f.franquiciaId)
+      
+      // Si tiene múltiples franquicias, mostrar todas
+      if (franquiciaIds.length === 1) {
+        whereClause.franquiciaId = franquiciaIds[0]
+      } else {
+        whereClause.franquiciaId = { in: franquiciaIds }
+      }
     }
 
     // Filtro por categoría
