@@ -21,19 +21,16 @@ export async function GET(
 
     const usuario = await prisma.usuario.findUnique({
       where: { id },
-      select: {
-        id: true,
-        email: true,
-        nombre: true,
-        apellidos: true,
-        rol: true,
-        activo: true,
-        createdAt: true,
-        franquicia: {
-          select: {
-            id: true,
-            nombre: true,
-            codigo: true,
+      include: {
+        franquicias: {
+          include: {
+            franquicia: {
+              select: {
+                id: true,
+                nombre: true,
+                codigo: true,
+              },
+            },
           },
         },
       },
@@ -69,31 +66,38 @@ export async function PATCH(
     }
 
     const body = await request.json()
-    const { nombre, apellidos, rol, franquiciaId, activo, password } = body
+    const { nombre, apellidos, rol, franquiciasIds, activo, password } = body
 
     const updateData: Record<string, unknown> = {}
 
     if (nombre) updateData.nombre = nombre
     if (apellidos !== undefined) updateData.apellidos = apellidos
     if (rol) updateData.rol = rol
-    if (franquiciaId !== undefined) updateData.franquiciaId = franquiciaId
     if (activo !== undefined) updateData.activo = activo
     if (password) updateData.passwordHash = await bcrypt.hash(password, 12)
+
+    if (franquiciasIds !== undefined) {
+      updateData.franquicias = {
+        deleteMany: {},
+        create: franquiciasIds.map((franquiciaId: string) => ({
+          franquiciaId,
+        })),
+      }
+    }
 
     const usuario = await prisma.usuario.update({
       where: { id },
       data: updateData,
-      select: {
-        id: true,
-        email: true,
-        nombre: true,
-        apellidos: true,
-        rol: true,
-        activo: true,
-        franquicia: {
-          select: {
-            id: true,
-            nombre: true,
+      include: {
+        franquicias: {
+          include: {
+            franquicia: {
+              select: {
+                id: true,
+                nombre: true,
+                codigo: true,
+              },
+            },
           },
         },
       },

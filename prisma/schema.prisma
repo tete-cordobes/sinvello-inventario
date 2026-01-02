@@ -7,6 +7,27 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// Roles de usuario
+enum Rol {
+  CENTRAL      // Ve todas las franquicias, acceso total
+  FRANQUICIADO // Ve solo su franquicia, reportes
+  TECNICO      // Solo inventario de su franquicia, registrar consumo/reposición
+}
+
+// Tipo de movimiento de stock
+enum TipoMovimiento {
+  REPOSICION // Entrada de stock
+  CONSUMO    // Salida de stock
+  AJUSTE     // Ajuste manual (corrección)
+}
+
+// Origen del movimiento
+enum OrigenMovimiento {
+  MANUAL  // Registrado manualmente por usuario
+  WEBHOOK // Recibido vía API externa
+  SISTEMA // Generado automáticamente
+}
+
 // Franquicias de SinVello
 model Franquicia {
   id        String   @id @default(cuid())
@@ -19,18 +40,11 @@ model Franquicia {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  usuarios   Usuario[]
-  inventario Inventario[]
+  usuarios       UsuarioFranquicia[]
+  inventario     Inventario[]
 
   @@index([codigo])
   @@index([activo])
-}
-
-// Roles de usuario
-enum Rol {
-  CENTRAL      // Ve todas las franquicias, acceso total
-  FRANQUICIADO // Ve solo su franquicia, reportes
-  TECNICO      // Solo inventario de su franquicia, registrar consumo/reposición
 }
 
 // Usuarios del sistema
@@ -45,13 +59,25 @@ model Usuario {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  franquiciaId String?
-  franquicia   Franquicia? @relation(fields: [franquiciaId], references: [id])
-
-  movimientos Movimiento[]
+  franquicias   UsuarioFranquicia[]
+  movimientos   Movimiento[]
 
   @@index([email])
   @@index([rol])
+}
+
+// Relación muchos a muchos entre Usuarios y Franquicias
+model UsuarioFranquicia {
+  id            String   @id @default(cuid())
+  usuarioId     String
+  franquiciaId  String
+  createdAt     DateTime @default(now())
+
+  usuario     Usuario     @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  franquicia  Franquicia  @relation(fields: [franquiciaId], references: [id], onDelete: Cascade)
+
+  @@unique([usuarioId, franquiciaId])
+  @@index([usuarioId])
   @@index([franquiciaId])
 }
 
@@ -97,20 +123,6 @@ model Inventario {
   @@index([franquiciaId])
   @@index([productoId])
   @@index([cantidadActual])
-}
-
-// Tipo de movimiento de stock
-enum TipoMovimiento {
-  REPOSICION // Entrada de stock
-  CONSUMO    // Salida de stock
-  AJUSTE     // Ajuste manual (corrección)
-}
-
-// Origen del movimiento
-enum OrigenMovimiento {
-  MANUAL  // Registrado manualmente por usuario
-  WEBHOOK // Recibido vía API externa
-  SISTEMA // Generado automáticamente
 }
 
 // Histórico de movimientos

@@ -15,7 +15,11 @@ import {
   Check,
   X,
   User,
+  ChevronDown,
+  ChevronUp,
+  Store,
 } from "lucide-react"
+import { Rol } from "@prisma/client"
 
 interface Usuario {
   id: string
@@ -25,11 +29,11 @@ interface Usuario {
   rol: "CENTRAL" | "FRANQUICIADO" | "TECNICO"
   activo: boolean
   createdAt: string
-  franquicia: {
+  franquicias: Array<{
     id: string
     nombre: string
     codigo: string
-  } | null
+  }>
 }
 
 interface Franquicia {
@@ -49,10 +53,12 @@ export default function UsuariosPage() {
   const router = useRouter()
   const [usuarios, setUsuarios] = useState<Usuario[]>([])
   const [franquicias, setFranquicias] = useState<Franquicia[]>([])
+  const [misFranquicias, setMisFranquicias] = useState<Franquicia[]>([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [editingUsuario, setEditingUsuario] = useState<Usuario | null>(null)
   const [menuOpen, setMenuOpen] = useState<string | null>(null)
+  const [franquiciasDropdown, setFranquiciasDropdown] = useState(false)
 
   // Form state
   const [formData, setFormData] = useState({
@@ -61,23 +67,33 @@ export default function UsuariosPage() {
     nombre: "",
     apellidos: "",
     rol: "TECNICO" as "CENTRAL" | "FRANQUICIADO" | "TECNICO",
-    franquiciaId: "",
+    franquiciasIds: [] as string[],
   })
 
   useEffect(() => {
     if (status === "unauthenticated") {
       router.push("/login")
-    } else if (session?.user?.rol !== "CENTRAL") {
-      router.push("/dashboard")
     }
-  }, [status, session, router])
+  }, [status, router])
 
   useEffect(() => {
-    if (session?.user?.rol === "CENTRAL") {
-      fetchUsuarios()
-      fetchFranquicias()
+    if (session?.user) {
+      // CENTRAL puede ver todos los usuarios y franquicias
+      if (session.user.rol === "CENTRAL") {
+        fetchUsuarios()
+        fetchFranquicias()
+      }
+      // FRANQUICIADO puede ver usuarios y crear técnicos para sus franquicias
+      else if (session.user.rol === "FRANQUICIADO") {
+        fetchUsuarios()
+        fetchMisFranquicias()
+      }
+      // TECNICO no tiene acceso
+      else {
+        router.push("/dashboard")
+      }
     }
-  }, [session])
+  }, [session, router])
 
   const fetchUsuarios = async () => {
     try {
@@ -105,6 +121,18 @@ export default function UsuariosPage() {
     }
   }
 
+  const fetchMisFranquicias = async () => {
+    try {
+      const res = await fetch("/api/usuarios/me")
+      if (res.ok) {
+        const data = await res.json()
+        setMisFranquicias(data.franquicias || [])
+      }
+    } catch (error) {
+      console.error("Error:", error)
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -113,15 +141,27 @@ export default function UsuariosPage() {
       : "/api/usuarios"
     const method = editingUsuario ? "PATCH" : "POST"
 
+    // Validar franquicias según el rol
+    let franquiciasIds = formData.franquiciasIds
+    if (formData.rol === "CENTRAL") {
+      franquiciasIds = []
+    } else if (franquiciasIds.length === 0) {
+      alert("Debes seleccionar al menos una franquicia")
+      return
+    }
+
     const payload = editingUsuario
       ? {
           nombre: formData.nombre,
           apellidos: formData.apellidos || null,
           rol: formData.rol,
-          franquiciaId: formData.rol === "CENTRAL" ? null : formData.franquiciaId,
+          franquiciasIds: formData.rol === "CENTRAL" ? [] : franquiciasIds,
           ...(formData.password && { password: formData.password }),
         }
-      : formData
+      : {
+          ...formData,
+          franquiciasIds: formData.rol === "CENTRAL" ? [] : franquiciasIds,
+        }
 
     try {
       const res = await fetch(url, {
@@ -139,7 +179,7 @@ export default function UsuariosPage() {
           nombre: "",
           apellidos: "",
           rol: "TECNICO",
-          franquiciaId: "",
+          franquiciasIds: [],
         })
         fetchUsuarios()
       } else {
@@ -159,7 +199,7 @@ export default function UsuariosPage() {
       nombre: usuario.nombre,
       apellidos: usuario.apellidos || "",
       rol: usuario.rol,
-      franquiciaId: usuario.franquicia?.id || "",
+      franquiciasIds: usuario.franquicias.map((f) => f.id),
     })
     setShowModal(true)
     setMenuOpen(null)
@@ -179,6 +219,23 @@ export default function UsuariosPage() {
     setMenuOpen(null)
   }
 
+  const toggleFranquicia = (franquiciaId: string) => {
+    setFormData((prev) => {
+      const newIds = prev.franquiciasIds.includes(franquiciaId)
+        ? prev.franquiciasIds.filter((id) => id !== franquiciaId)
+        : [...prev.franquiciasIds, franquiciaId]
+      return { ...prev, franquiciasIds: newIds }
+    })
+  }
+
+  const getAvailableFranquicias = () => {
+    if (session?.user?.rol === "CENTRAL") {
+      return franquicias
+    } else {
+      return misFranquicias
+    }
+  }
+
   if (status === "loading" || loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -187,15 +244,27 @@ export default function UsuariosPage() {
     )
   }
 
-  if (session?.user?.rol !== "CENTRAL") {
+  if (session?.user?.rol === "TECNICO") {
     return null
   }
+
+  const availableRoles = session?.user?.rol === "FRANQUICIADO"
+    ? [{ value: "TECNICO", label: "Técnico (solo inventario)" }]
+    : [
+        { value: "CENTRAL", label: "Central (acceso total)" },
+        { value: "FRANQUICIADO", label: "Franquiciado (múltiples franquicias)" },
+        { value: "TECNICO", label: "Técnico (solo inventario)" },
+      ]
 
   return (
     <div className="space-y-6">
       <Header
         title="Usuarios"
-        subtitle="Gestión de usuarios del sistema"
+        subtitle={
+          session?.user?.rol === "CENTRAL"
+            ? "Gestión de usuarios del sistema"
+            : "Gestión de técnicos de tus franquicias"
+        }
       />
 
       {/* Botón agregar */}
@@ -208,64 +277,64 @@ export default function UsuariosPage() {
               password: "",
               nombre: "",
               apellidos: "",
-              rol: "TECNICO",
-              franquiciaId: "",
+              rol: session?.user?.rol === "FRANQUICIADO" ? "TECNICO" : "TECNICO",
+              franquiciasIds: [],
             })
             setShowModal(true)
           }}
-          className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-[var(--sinvello-primary)] text-white rounded-lg hover:bg-[var(--sinvello-primary)]/90 transition-colors"
         >
           <Plus size={20} />
-          Nuevo Usuario
+          Nuevo {session?.user?.rol === "FRANQUICIADO" ? "Técnico" : "Usuario"}
         </button>
       </div>
 
       {/* Tabla de usuarios */}
-      <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
+      <div className="bg-[var(--card)] rounded-xl shadow-sm border border-[var(--border)] overflow-hidden">
         <table className="w-full">
-          <thead className="bg-gray-50 border-b">
+          <thead className="bg-[var(--muted)] border-b border-[var(--border)]">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+              <th className="px-6 py-3 text-left text-xs font-medium text-[var(--foreground)] uppercase">
                 Usuario
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+              <th className="px-6 py-3 text-left text-xs font-medium text-[var(--foreground)] uppercase">
                 Email
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+              <th className="px-6 py-3 text-left text-xs font-medium text-[var(--foreground)] uppercase">
                 Rol
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                Franquicia
+              <th className="px-6 py-3 text-left text-xs font-medium text-[var(--foreground)] uppercase">
+                Franquicias
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+              <th className="px-6 py-3 text-left text-xs font-medium text-[var(--foreground)] uppercase">
                 Estado
               </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+              <th className="px-6 py-3 text-right text-xs font-medium text-[var(--foreground)] uppercase">
                 Acciones
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y">
+          <tbody className="divide-y divide-[var(--border)]">
             {usuarios.map((usuario) => (
               <tr
                 key={usuario.id}
-                className={!usuario.activo ? "bg-gray-50 opacity-60" : ""}
+                className={!usuario.activo ? "bg-[var(--muted)]/50 opacity-60" : ""}
               >
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                      <User className="text-primary" size={20} />
+                    <div className="w-10 h-10 bg-[var(--sinvello-primary)]/10 rounded-full flex items-center justify-center">
+                      <User className="text-[var(--sinvello-primary)]" size={20} />
                     </div>
                     <div>
-                      <div className="font-medium text-gray-900">
+                      <div className="font-medium text-[var(--foreground)]">
                         {usuario.nombre} {usuario.apellidos}
                       </div>
                     </div>
                   </div>
                 </td>
                 <td className="px-6 py-4">
-                  <div className="flex items-center gap-2 text-gray-600">
-                    <Mail size={16} className="text-gray-400" />
+                  <div className="flex items-center gap-2 text-[var(--foreground)]">
+                    <Mail size={16} className="text-[var(--muted-foreground)]" />
                     {usuario.email}
                   </div>
                 </td>
@@ -280,23 +349,35 @@ export default function UsuariosPage() {
                   </span>
                 </td>
                 <td className="px-6 py-4">
-                  {usuario.franquicia ? (
-                    <div className="flex items-center gap-2 text-gray-600">
-                      <Building2 size={16} className="text-gray-400" />
-                      {usuario.franquicia.nombre}
+                  {usuario.franquicias.length > 0 ? (
+                    <div className="flex flex-wrap gap-1">
+                      {usuario.franquicias.slice(0, 2).map((f) => (
+                        <span
+                          key={f.id}
+                          className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs bg-[var(--muted)] text-[var(--foreground)]"
+                        >
+                          <Store size={12} />
+                          {f.nombre}
+                        </span>
+                      ))}
+                      {usuario.franquicias.length > 2 && (
+                        <span className="inline-flex items-center px-2 py-1 rounded text-xs text-[var(--muted-foreground)]">
+                          +{usuario.franquicias.length - 2}
+                        </span>
+                      )}
                     </div>
                   ) : (
-                    <span className="text-gray-400">-</span>
+                    <span className="text-[var(--muted-foreground)]">-</span>
                   )}
                 </td>
                 <td className="px-6 py-4">
                   {usuario.activo ? (
-                    <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs">
+                    <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 rounded-full text-xs">
                       <Check size={12} />
                       Activo
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1 px-2 py-1 bg-red-100 text-red-700 rounded-full text-xs">
+                    <span className="inline-flex items-center gap-1 px-2 py-1 bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 rounded-full text-xs">
                       <X size={12} />
                       Inactivo
                     </span>
@@ -308,22 +389,22 @@ export default function UsuariosPage() {
                       onClick={() =>
                         setMenuOpen(menuOpen === usuario.id ? null : usuario.id)
                       }
-                      className="p-1 hover:bg-gray-100 rounded"
+                      className="p-1 hover:bg-[var(--muted)] rounded"
                     >
-                      <MoreVertical size={20} className="text-gray-400" />
+                      <MoreVertical size={20} className="text-[var(--muted-foreground)]" />
                     </button>
                     {menuOpen === usuario.id && (
-                      <div className="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-lg border py-1 z-10">
+                      <div className="absolute right-0 mt-1 w-48 bg-[var(--card)] rounded-lg shadow-lg border border-[var(--border)] py-1 z-10">
                         <button
                           onClick={() => handleEdit(usuario)}
-                          className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2"
+                          className="w-full px-4 py-2 text-left text-sm hover:bg-[var(--muted)] flex items-center gap-2"
                         >
                           <Pencil size={16} />
                           Editar
                         </button>
                         <button
                           onClick={() => handleToggleActive(usuario)}
-                          className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2"
+                          className="w-full px-4 py-2 text-left text-sm hover:bg-[var(--muted)] flex items-center gap-2"
                         >
                           {usuario.activo ? (
                             <>
@@ -347,7 +428,7 @@ export default function UsuariosPage() {
         </table>
 
         {usuarios.length === 0 && !loading && (
-          <div className="text-center py-12 text-gray-500">
+          <div className="text-center py-12 text-[var(--muted-foreground)]">
             No hay usuarios registrados
           </div>
         )}
@@ -356,13 +437,13 @@ export default function UsuariosPage() {
       {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
-            <h2 className="text-xl font-semibold mb-4">
+          <div className="bg-[var(--card)] rounded-xl p-6 w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
+            <h2 className="text-xl font-semibold mb-4 text-[var(--foreground)]">
               {editingUsuario ? "Editar Usuario" : "Nuevo Usuario"}
             </h2>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-[var(--foreground)] mb-1">
                   Email *
                 </label>
                 <input
@@ -371,14 +452,14 @@ export default function UsuariosPage() {
                   onChange={(e) =>
                     setFormData({ ...formData, email: e.target.value })
                   }
-                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+                  className="w-full px-3 py-2 border border-[var(--border)] rounded-lg focus:ring-2 focus:ring-[var(--sinvello-primary)] focus:border-[var(--sinvello-primary)] bg-[var(--input)] text-[var(--foreground)]"
                   placeholder="usuario@sinvello.es"
                   required
                   disabled={!!editingUsuario}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-[var(--foreground)] mb-1">
                   {editingUsuario ? "Nueva Contraseña (dejar vacío para no cambiar)" : "Contraseña *"}
                 </label>
                 <input
@@ -387,7 +468,7 @@ export default function UsuariosPage() {
                   onChange={(e) =>
                     setFormData({ ...formData, password: e.target.value })
                   }
-                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+                  className="w-full px-3 py-2 border border-[var(--border)] rounded-lg focus:ring-2 focus:ring-[var(--sinvello-primary)] focus:border-[var(--sinvello-primary)] bg-[var(--input)] text-[var(--foreground)]"
                   placeholder="••••••••"
                   required={!editingUsuario}
                   minLength={6}
@@ -395,7 +476,7 @@ export default function UsuariosPage() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-[var(--foreground)] mb-1">
                     Nombre *
                   </label>
                   <input
@@ -404,13 +485,13 @@ export default function UsuariosPage() {
                     onChange={(e) =>
                       setFormData({ ...formData, nombre: e.target.value })
                     }
-                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+                    className="w-full px-3 py-2 border border-[var(--border)] rounded-lg focus:ring-2 focus:ring-[var(--sinvello-primary)] focus:border-[var(--sinvello-primary)] bg-[var(--input)] text-[var(--foreground)]"
                     placeholder="Juan"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-[var(--foreground)] mb-1">
                     Apellidos
                   </label>
                   <input
@@ -419,13 +500,13 @@ export default function UsuariosPage() {
                     onChange={(e) =>
                       setFormData({ ...formData, apellidos: e.target.value })
                     }
-                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+                    className="w-full px-3 py-2 border border-[var(--border)] rounded-lg focus:ring-2 focus:ring-[var(--sinvello-primary)] focus:border-[var(--sinvello-primary)] bg-[var(--input)] text-[var(--foreground)]"
                     placeholder="García"
                   />
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-[var(--foreground)] mb-1">
                   Rol *
                 </label>
                 <select
@@ -434,37 +515,84 @@ export default function UsuariosPage() {
                     setFormData({
                       ...formData,
                       rol: e.target.value as "CENTRAL" | "FRANQUICIADO" | "TECNICO",
-                      franquiciaId: e.target.value === "CENTRAL" ? "" : formData.franquiciaId,
+                      franquiciasIds: [],
                     })
                   }
-                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+                  className="w-full px-3 py-2 border border-[var(--border)] rounded-lg focus:ring-2 focus:ring-[var(--sinvello-primary)] focus:border-[var(--sinvello-primary)] bg-[var(--input)] text-[var(--foreground)]"
                   required
                 >
-                  <option value="CENTRAL">Central (acceso total)</option>
-                  <option value="FRANQUICIADO">Franquiciado (su franquicia)</option>
-                  <option value="TECNICO">Técnico (solo inventario)</option>
+                  {availableRoles.map((role) => (
+                    <option key={role.value} value={role.value}>
+                      {role.label}
+                    </option>
+                  ))}
                 </select>
               </div>
               {formData.rol !== "CENTRAL" && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Franquicia *
+                  <label className="block text-sm font-medium text-[var(--foreground)] mb-1">
+                    Franquicias *
                   </label>
-                  <select
-                    value={formData.franquiciaId}
-                    onChange={(e) =>
-                      setFormData({ ...formData, franquiciaId: e.target.value })
-                    }
-                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
-                    required
-                  >
-                    <option value="">Seleccionar franquicia</option>
-                    {franquicias.map((f) => (
-                      <option key={f.id} value={f.id}>
-                        {f.nombre} ({f.codigo})
-                      </option>
-                    ))}
-                  </select>
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setFranquiciasDropdown(!franquiciasDropdown)}
+                      className="w-full px-3 py-2 border border-[var(--border)] rounded-lg focus:ring-2 focus:ring-[var(--sinvello-primary)] focus:border-[var(--sinvello-primary)] bg-[var(--input)] text-[var(--foreground)] text-left flex items-center justify-between"
+                    >
+                      <span>
+                        {formData.franquiciasIds.length === 0
+                          ? "Seleccionar franquicias"
+                          : `${formData.franquiciasIds.length} seleccionada(s)`}
+                      </span>
+                      {franquiciasDropdown ? (
+                        <ChevronUp size={20} />
+                      ) : (
+                        <ChevronDown size={20} />
+                      )}
+                    </button>
+                    {franquiciasDropdown && (
+                      <div className="absolute z-10 w-full mt-1 bg-[var(--card)] border border-[var(--border)] rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                        {getAvailableFranquicias().map((f) => (
+                          <label
+                            key={f.id}
+                            className="flex items-center gap-2 px-3 py-2 hover:bg-[var(--muted)] cursor-pointer"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={formData.franquiciasIds.includes(f.id)}
+                              onChange={() => toggleFranquicia(f.id)}
+                              className="rounded border-[var(--border)] text-[var(--sinvello-primary)] focus:ring-[var(--sinvello-primary)]"
+                            />
+                            <span className="text-sm text-[var(--foreground)]">
+                              {f.nombre} ({f.codigo})
+                            </span>
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  {formData.franquiciasIds.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {formData.franquiciasIds.map((fid) => {
+                        const f = getAvailableFranquicias().find((fr) => fr.id === fid)
+                        return f ? (
+                          <span
+                            key={fid}
+                            className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs bg-[var(--muted)] text-[var(--foreground)]"
+                          >
+                            {f.nombre}
+                            <button
+                              type="button"
+                              onClick={() => toggleFranquicia(fid)}
+                              className="hover:text-red-500"
+                            >
+                              <X size={12} />
+                            </button>
+                          </span>
+                        ) : null
+                      })}
+                    </div>
+                  )}
                 </div>
               )}
               <div className="flex gap-3 pt-4">
@@ -473,14 +601,15 @@ export default function UsuariosPage() {
                   onClick={() => {
                     setShowModal(false)
                     setEditingUsuario(null)
+                    setFranquiciasDropdown(false)
                   }}
-                  className="flex-1 px-4 py-2 border rounded-lg hover:bg-gray-50"
+                  className="flex-1 px-4 py-2 border border-[var(--border)] rounded-lg hover:bg-[var(--muted)] text-[var(--foreground)]"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90"
+                  className="flex-1 px-4 py-2 bg-[var(--sinvello-primary)] text-white rounded-lg hover:bg-[var(--sinvello-primary)]/90"
                 >
                   {editingUsuario ? "Guardar" : "Crear"}
                 </button>

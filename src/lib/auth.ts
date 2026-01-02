@@ -1,8 +1,33 @@
-import NextAuth from "next-auth"
+import NextAuth, { User } from "next-auth"
 import Credentials from "next-auth/providers/credentials"
 import { compare } from "bcryptjs"
 import { prisma } from "./prisma"
 import { Rol } from "@prisma/client"
+
+declare module "next-auth" {
+  interface User {
+    franquicias?: Array<{
+      id: string
+      nombre: string
+    }>
+  }
+
+  interface Session {
+    user: {
+      id: string
+      email: string
+      nombre: string
+      apellidos?: string
+      rol: string
+      franquiciaId?: string
+      franquiciaNombre?: string
+      franquicias?: Array<{
+        id: string
+        nombre: string
+      }>
+    }
+  }
+}
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
@@ -20,10 +45,14 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         const user = await prisma.usuario.findUnique({
           where: { email: credentials.email as string },
           include: {
-            franquicia: {
-              select: {
-                id: true,
-                nombre: true,
+            franquicias: {
+              include: {
+                franquicia: {
+                  select: {
+                    id: true,
+                    nombre: true,
+                  },
+                },
               },
             },
           },
@@ -46,14 +75,20 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           throw new Error("Contraseña incorrecta")
         }
 
+        const primeraFranquicia = user.franquicias[0]?.franquicia
+
         return {
           id: user.id,
           email: user.email,
           nombre: user.nombre,
           apellidos: user.apellidos ?? undefined,
           rol: user.rol,
-          franquiciaId: user.franquiciaId ?? undefined,
-          franquiciaNombre: user.franquicia?.nombre ?? undefined,
+          franquiciaId: primeraFranquicia?.id ?? undefined,
+          franquiciaNombre: primeraFranquicia?.nombre ?? undefined,
+          franquicias: user.franquicias.map((uf) => ({
+            id: uf.franquicia.id,
+            nombre: uf.franquicia.nombre,
+          })),
         }
       },
     }),
@@ -68,6 +103,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.rol = user.rol
         token.franquiciaId = user.franquiciaId
         token.franquiciaNombre = user.franquiciaNombre
+        token.franquicias = user.franquicias
       }
       return token
     },
@@ -81,6 +117,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         rol: token.rol as Rol,
         franquiciaId: token.franquiciaId as string | undefined,
         franquiciaNombre: token.franquiciaNombre as string | undefined,
+        franquicias: token.franquicias as Array<{ id: string; nombre: string }> | undefined,
       }
       return session
     },
@@ -106,7 +143,7 @@ export function canAccessReports(rol: Rol): boolean {
 }
 
 export function canManageUsers(rol: Rol): boolean {
-  return rol === Rol.CENTRAL
+  return rol === Rol.CENTRAL || rol === Rol.FRANQUICIADO
 }
 
 export function canManageFranquicias(rol: Rol): boolean {

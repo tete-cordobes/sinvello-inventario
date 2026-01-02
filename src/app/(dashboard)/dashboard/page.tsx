@@ -79,11 +79,13 @@ export default async function DashboardPage() {
 
   const { rol, franquiciaId, franquiciaNombre } = session.user
 
-  if (rol === Rol.TECNICO) {
+  const rolEnum = rol as Rol
+
+  if (rolEnum === Rol.TECNICO) {
     redirect("/inventario")
   }
 
-  const stats = await getStats(session.user.id, rol, franquiciaId)
+  const stats = await getStats(session.user.id, rolEnum, franquiciaId)
 
   const statsCards = [
     {
@@ -127,7 +129,7 @@ export default async function DashboardPage() {
       <Header
         title="Dashboard"
         subtitle={
-          rol === Rol.CENTRAL
+          rolEnum === Rol.CENTRAL
             ? "Vista general de todas las franquicias"
             : `Franquicia: ${franquiciaNombre}`
         }

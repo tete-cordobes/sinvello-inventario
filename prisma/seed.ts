@@ -119,7 +119,7 @@ async function main() {
         nombre: "Administrador",
         apellidos: "Central",
         rol: Rol.CENTRAL,
-        franquiciaId: null, // Central ve todas
+        // Central no necesita franquicias
       },
     }),
     // Franquiciado Madrid
@@ -132,7 +132,11 @@ async function main() {
         nombre: "Carlos",
         apellidos: "García López",
         rol: Rol.FRANQUICIADO,
-        franquiciaId: franquicias[0].id,
+        franquicias: {
+          create: {
+            franquiciaId: franquicias[0].id,
+          },
+        },
       },
     }),
     // Técnico Madrid
@@ -145,7 +149,11 @@ async function main() {
         nombre: "Ana",
         apellidos: "Martínez Ruiz",
         rol: Rol.TECNICO,
-        franquiciaId: franquicias[0].id,
+        franquicias: {
+          create: {
+            franquiciaId: franquicias[0].id,
+          },
+        },
       },
     }),
     // Franquiciado Barcelona
@@ -158,7 +166,11 @@ async function main() {
         nombre: "María",
         apellidos: "Fernández Vidal",
         rol: Rol.FRANQUICIADO,
-        franquiciaId: franquicias[1].id,
+        franquicias: {
+          create: {
+            franquiciaId: franquicias[1].id,
+          },
+        },
       },
     }),
   ])

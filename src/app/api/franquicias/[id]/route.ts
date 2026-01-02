@@ -22,12 +22,16 @@ export async function GET(
       where: { id },
       include: {
         usuarios: {
-          select: {
-            id: true,
-            nombre: true,
-            email: true,
-            rol: true,
-            activo: true,
+          include: {
+            usuario: {
+              select: {
+                id: true,
+                nombre: true,
+                email: true,
+                rol: true,
+                activo: true,
+              },
+            },
           },
         },
         _count: {

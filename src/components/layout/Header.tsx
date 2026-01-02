@@ -9,7 +9,7 @@ interface HeaderProps {
   subtitle?: string
   user?: {
     nombre: string
-    rol: Rol
+    rol: Rol | string
     franquiciaNombre?: string
   }
 }

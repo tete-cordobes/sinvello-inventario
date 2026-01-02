@@ -25,7 +25,7 @@ interface SidebarProps {
     nombre: string
     apellidos?: string
     email: string
-    rol: Rol
+    rol: Rol | string
     franquiciaNombre?: string
   }
 }
@@ -77,7 +77,7 @@ export default function Sidebar({ user }: SidebarProps) {
     item.roles.includes(user.rol)
   )
 
-  const getRolLabel = (rol: Rol) => {
+  const getRolLabel = (rol: Rol | string) => {
     switch (rol) {
       case "CENTRAL":
         return "Administrador Central"

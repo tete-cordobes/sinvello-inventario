@@ -8,9 +8,13 @@ declare module "next-auth" {
       email: string
       nombre: string
       apellidos?: string
-      rol: Rol
+      rol: string
       franquiciaId?: string
       franquiciaNombre?: string
+      franquicias?: Array<{
+        id: string
+        nombre: string
+      }>
     }
   }
 
@@ -19,9 +23,13 @@ declare module "next-auth" {
     email: string
     nombre: string
     apellidos?: string
-    rol: Rol
+    rol: string
     franquiciaId?: string
     franquiciaNombre?: string
+    franquicias?: Array<{
+      id: string
+      nombre: string
+    }>
   }
 }
 
