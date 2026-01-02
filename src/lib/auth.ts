@@ -38,57 +38,62 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         password: { label: "Contraseña", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
-          throw new Error("Credenciales requeridas")
-        }
+        try {
+          if (!credentials?.email || !credentials?.password) {
+            throw new Error("Credenciales requeridas")
+          }
 
-        const user = await prisma.usuario.findUnique({
-          where: { email: credentials.email as string },
-          include: {
-            franquicias: {
-              include: {
-                franquicia: {
-                  select: {
-                    id: true,
-                    nombre: true,
+          const user = await prisma.usuario.findUnique({
+            where: { email: credentials.email as string },
+            include: {
+              franquicias: {
+                include: {
+                  franquicia: {
+                    select: {
+                      id: true,
+                      nombre: true,
+                    },
                   },
                 },
               },
             },
-          },
-        })
+          })
 
-        if (!user) {
-          throw new Error("Usuario no encontrado")
-        }
+          if (!user) {
+            throw new Error("Usuario no encontrado")
+          }
 
-        if (!user.activo) {
-          throw new Error("Usuario desactivado")
-        }
+          if (!user.activo) {
+            throw new Error("Usuario desactivado")
+          }
 
-        const isValidPassword = await compare(
-          credentials.password as string,
-          user.passwordHash
-        )
+          const isValidPassword = await compare(
+            credentials.password as string,
+            user.passwordHash
+          )
 
-        if (!isValidPassword) {
-          throw new Error("Contraseña incorrecta")
-        }
+          if (!isValidPassword) {
+            throw new Error("Contraseña incorrecta")
+          }
 
-        const primeraFranquicia = user.franquicias[0]?.franquicia
+          const primeraFranquicia = user.franquicias[0]?.franquicia
 
-        return {
-          id: user.id,
-          email: user.email,
-          nombre: user.nombre,
-          apellidos: user.apellidos ?? undefined,
-          rol: user.rol,
-          franquiciaId: primeraFranquicia?.id ?? undefined,
-          franquiciaNombre: primeraFranquicia?.nombre ?? undefined,
-          franquicias: user.franquicias.map((uf) => ({
-            id: uf.franquicia.id,
-            nombre: uf.franquicia.nombre,
-          })),
+          return {
+            id: user.id,
+            email: user.email,
+            nombre: user.nombre,
+            apellidos: user.apellidos ?? undefined,
+            rol: user.rol,
+            franquiciaId: primeraFranquicia?.id ?? undefined,
+            franquiciaNombre: primeraFranquicia?.nombre ?? undefined,
+            franquicias: user.franquicias.map((uf) => ({
+              id: uf.franquicia.id,
+              nombre: uf.franquicia.nombre,
+            })),
+          }
+        } catch (error) {
+          console.error("Error en authorize:", error)
+          throw error
         }
       },
     }),
@@ -130,7 +135,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     strategy: "jwt",
     maxAge: 24 * 60 * 60, // 24 horas
   },
-  secret: process.env.NEXTAUTH_SECRET,
+  secret: process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET,
+  trustHost: true,
+  debug: process.env.NODE_ENV === "development",
 })
 
 // Funciones de utilidad para verificar roles
