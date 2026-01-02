@@ -10,7 +10,7 @@
   --sinvello-text: #666666;
   --sinvello-text-dark: #1A1A2E;
 
-  /* Sistema de colores para componentes */
+  /* Sistema de colores para componentes - Light Mode */
   --background: #F5F5F5;
   --foreground: #1A1A2E;
   --card: #FFFFFF;
@@ -37,6 +37,29 @@
   --warning: #F59E0B;
   --error: #EF4444;
   --info: #3B82F6;
+}
+
+.dark {
+  /* Sistema de colores para componentes - Dark Mode */
+  --background: #0F0F0F;
+  --foreground: #F5F5F5;
+  --card: #1A1A1E;
+  --card-foreground: #E5E5E5;
+  --popover: #1A1A1E;
+  --popover-foreground: #E5E5E5;
+  --primary: #E6336E;
+  --primary-foreground: #FFFFFF;
+  --secondary: #2D2D2D;
+  --secondary-foreground: #FFFFFF;
+  --muted: #1A1A1E;
+  --muted-foreground: #9CA3AF;
+  --accent: #2D1B2E;
+  --accent-foreground: #F9A8D4;
+  --destructive: #DC2626;
+  --destructive-foreground: #FFFFFF;
+  --border: #2D2D2D;
+  --input: #1A1A1E;
+  --ring: #E6336E;
 }
 
 @theme inline {
@@ -101,22 +124,23 @@ body {
 
 /* Botón primario */
 .btn-primary {
-  background-color: var(--sinvello-primary);
+  background: linear-gradient(135deg, var(--sinvello-primary) 0%, var(--sinvello-primary-hover) 100%);
   color: white;
   padding: 0.75rem 1.5rem;
   border-radius: 0.5rem;
   font-weight: 500;
-  transition: all 0.2s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 4px 12px rgba(230, 51, 110, 0.3);
+  border: 1px solid var(--sinvello-primary);
 }
 
 .btn-primary:hover {
-  background-color: var(--sinvello-primary-hover);
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(230, 51, 110, 0.4);
 }
 
 .btn-primary:active {
-  transform: translateY(0);
+  transform: translateY(0) scale(0.98);
 }
 
 /* Card con sombra */
@@ -125,25 +149,96 @@ body {
   border-radius: var(--radius);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   border: 1px solid var(--border);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card:hover {
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+}
+
+/* Card con glass morphism */
+.card-glass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.dark .card-glass {
+  background: rgba(26, 26, 46, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 /* Badge de stock bajo */
 .badge-low-stock {
-  background-color: #FEE2E2;
+  background: linear-gradient(135deg, #FEE2E2 0%, #FECACA 100%);
   color: #DC2626;
   padding: 0.25rem 0.5rem;
   border-radius: 9999px;
   font-size: 0.75rem;
   font-weight: 500;
+  box-shadow: 0 2px 8px rgba(220, 38, 102, 0.2);
 }
 
 .badge-ok-stock {
-  background-color: #DCFCE7;
+  background: linear-gradient(135deg, #DCFCE7 0%, #BBF7D0 100%);
   color: #16A34A;
   padding: 0.25rem 0.5rem;
   border-radius: 9999px;
   font-size: 0.75rem;
   font-weight: 500;
+  box-shadow: 0 2px 8px rgba(22, 163, 74, 0.2);
+}
+
+/* Ripple effect */
+@keyframes ripple {
+  0% {
+    transform: scale(0);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+.ripple {
+  position: relative;
+  overflow: hidden;
+}
+
+.ripple::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%);
+}
+
+/* Shimmer loading */
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--muted) 0px,
+    var(--muted-foreground) 200px,
+    var(--muted) 400px
+  );
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite linear;
+  border-radius: var(--radius);
 }
 
 /* Animaciones */
@@ -156,6 +251,24 @@ body {
   animation: fadeIn 0.3s ease-out;
 }
 
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(-20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.animate-slideIn {
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.animate-scaleIn {
+  animation: scaleIn 0.3s ease-out;
+}
+
 /* Focus visible */
 :focus-visible {
   outline: 2px solid var(--sinvello-primary);
@@ -164,5 +277,112 @@ body {
 
 /* Transiciones suaves */
 .transition-all {
-  transition: all 0.2s ease-in-out;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Glass morphism */
+.glass {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.dark .glass {
+  background: rgba(26, 26, 46, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Tipografía mejorada */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  line-height: 1.25;
+}
+
+h1 {
+  font-size: 2.25rem;
+  font-weight: 700;
+  letter-spacing: -0.05em;
+}
+
+h2 {
+  font-size: 1.875rem;
+  font-weight: 600;
+}
+
+h3 {
+  font-size: 1.5rem;
+}
+
+.text-gradient {
+  background: linear-gradient(135deg, var(--sinvello-primary) 0%, var(--sinvello-primary-hover) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Espaciado mejorado */
+.spacing-tight {
+  gap: 0.5rem;
+}
+
+.spacing-normal {
+  gap: 1rem;
+}
+
+.spacing-loose {
+  gap: 1.5rem;
+}
+
+.spacing-extra-loose {
+  gap: 2rem;
+}
+
+/* Contenedor con espaciado mejorado */
+.container-tight {
+  padding: 1.5rem;
+}
+
+.container-normal {
+  padding: 2rem;
+}
+
+.container-loose {
+  padding: 3rem;
+}
+
+.container-extra-loose {
+  padding: 4rem;
+}
+
+/* Toast animations */
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOutRight {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+.toast-enter {
+  animation: slideInRight 0.3s ease-out;
+}
+
+.toast-exit {
+  animation: slideOutRight 0.3s ease-in;
 }

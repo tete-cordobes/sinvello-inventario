@@ -103,7 +103,7 @@ export default function Sidebar({ user }: SidebarProps) {
       {/* Overlay for mobile */}
       {isOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden transition-opacity duration-300"
           onClick={() => setIsOpen(false)}
         />
       )}
@@ -111,7 +111,7 @@ export default function Sidebar({ user }: SidebarProps) {
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed top-0 left-0 z-40 h-screen w-72 bg-white border-r border-[var(--border)]",
+          "fixed top-0 left-0 z-40 h-screen w-72 bg-[var(--card)]/80 backdrop-blur-xl border-r border-[var(--border)]",
           "transform transition-transform duration-300 ease-in-out",
           "lg:translate-x-0",
           isOpen ? "translate-x-0" : "-translate-x-full"
@@ -192,9 +192,10 @@ export default function Sidebar({ user }: SidebarProps) {
               <button
                 onClick={() => signOut({ callbackUrl: "/login" })}
                 className="flex items-center justify-center gap-2 w-full py-2 px-4 rounded-lg
-                           border border-[var(--border)] text-[var(--sinvello-text-dark)]
-                           hover:bg-white hover:border-[var(--sinvello-primary)] hover:text-[var(--sinvello-primary)]
-                           transition-all duration-200"
+                           border border-[var(--border)] text-[var(--foreground)]
+                           bg-[var(--input)] hover:bg-[var(--muted)]
+                           hover:border-[var(--sinvello-primary)] hover:text-[var(--sinvello-primary)]
+                           transition-all duration-200 active:scale-95"
               >
                 <LogOut size={16} />
                 <span>Cerrar sesión</span>

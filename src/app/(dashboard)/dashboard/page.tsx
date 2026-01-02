@@ -37,7 +37,6 @@ async function getStats(userId: string, rol: Rol, franquiciaId?: string) {
     rol === Rol.CENTRAL ? prisma.franquicia.count({ where: { activo: true } }) : 1,
   ])
 
-  // Productos con stock bajo
   const stockBajo = await prisma.inventario.count({
     where: {
       ...whereClause,
@@ -47,7 +46,6 @@ async function getStats(userId: string, rol: Rol, franquiciaId?: string) {
     },
   })
 
-  // Últimos movimientos
   const ultimosMovimientos = await prisma.movimiento.findMany({
     where: {
       inventario: rol === Rol.CENTRAL ? {} : { franquiciaId },
@@ -81,7 +79,6 @@ export default async function DashboardPage() {
 
   const { rol, franquiciaId, franquiciaNombre } = session.user
 
-  // Si es técnico, redirigir a inventario
   if (rol === Rol.TECNICO) {
     redirect("/inventario")
   }
@@ -137,17 +134,18 @@ export default async function DashboardPage() {
         user={session.user}
       />
 
-      <div className="p-6 space-y-6">
+       <div className="p-8 space-y-8 container-normal">
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {statsCards.map((stat, index) => {
             const Icon = stat.icon
             return (
               <div
                 key={index}
-                className={`card p-6 ${
-                  stat.alert ? "ring-2 ring-red-500 ring-offset-2" : ""
-                }`}
+                className={`card p-6 bg-gradient-to-br from-[var(--card)] to-[var(--muted)]
+                           hover:shadow-xl hover:scale-105 active:scale-95 transition-all duration-300
+                           ${stat.alert ? "animate-pulse ring-2 ring-red-500 ring-offset-2" : ""}
+                `}
               >
                 <div className="flex items-center justify-between">
                   <div>
@@ -169,22 +167,22 @@ export default async function DashboardPage() {
           })}
         </div>
 
-        {/* Últimos movimientos */}
-        <div className="card p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-[var(--sinvello-text-dark)]">
-              Últimos movimientos
-            </h2>
-            <Link
-              href="/movimientos"
-              className="text-[var(--sinvello-primary)] hover:underline text-sm"
-            >
-              Ver todos
-            </Link>
+          {/* Últimos movimientos */}
+          <div className="card p-6 bg-gradient-to-br from-[var(--card)] to-[var(--muted)]">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-semibold text-[var(--foreground)]">
+                Últimos movimientos
+              </h2>
+              <Link
+                href="/movimientos"
+                className="text-[var(--primary)] hover:underline text-sm transition-all hover:text-[var(--primary-hover)]"
+              >
+                Ver todos
+              </Link>
           </div>
 
           {stats.ultimosMovimientos.length === 0 ? (
-            <p className="text-[var(--sinvello-text)] text-center py-8">
+            <p className="text-[var(--muted-foreground)] text-center py-8">
               No hay movimientos registrados
             </p>
           ) : (
@@ -192,21 +190,21 @@ export default async function DashboardPage() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-[var(--border)]">
-                    <th className="text-left py-3 px-4 text-sm font-medium text-[var(--sinvello-text)]">
+                    <th className="text-left py-3 px-4 text-sm font-medium text-[var(--muted-foreground)]">
                       Producto
                     </th>
                     {rol === Rol.CENTRAL && (
-                      <th className="text-left py-3 px-4 text-sm font-medium text-[var(--sinvello-text)]">
+                      <th className="text-left py-3 px-4 text-sm font-medium text-[var(--muted-foreground)]">
                         Franquicia
                       </th>
                     )}
-                    <th className="text-left py-3 px-4 text-sm font-medium text-[var(--sinvello-text)]">
+                    <th className="text-left py-3 px-4 text-sm font-medium text-[var(--muted-foreground)]">
                       Tipo
                     </th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-[var(--sinvello-text)]">
+                    <th className="text-left py-3 px-4 text-sm font-medium text-[var(--muted-foreground)]">
                       Cantidad
                     </th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-[var(--sinvello-text)]">
+                    <th className="text-left py-3 px-4 text-sm font-medium text-[var(--muted-foreground)]">
                       Usuario
                     </th>
                   </tr>
@@ -215,13 +213,13 @@ export default async function DashboardPage() {
                   {stats.ultimosMovimientos.map((mov) => (
                     <tr
                       key={mov.id}
-                      className="border-b border-[var(--border)] last:border-0"
+                      className="border-b border-[var(--border)] last:border-0 hover:bg-[var(--muted)]/50 transition-colors"
                     >
-                      <td className="py-3 px-4 text-[var(--sinvello-text-dark)]">
+                      <td className="py-3 px-4 text-[var(--foreground)]">
                         {mov.inventario.producto.nombre}
                       </td>
                       {rol === Rol.CENTRAL && (
-                        <td className="py-3 px-4 text-[var(--sinvello-text)]">
+                        <td className="py-3 px-4 text-[var(--muted-foreground)]">
                           {mov.inventario.franquicia.nombre}
                         </td>
                       )}
@@ -229,10 +227,10 @@ export default async function DashboardPage() {
                         <span
                           className={`px-2 py-1 rounded-full text-xs font-medium ${
                             mov.tipo === "REPOSICION"
-                              ? "bg-green-100 text-green-700"
+                              ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
                               : mov.tipo === "CONSUMO"
-                              ? "bg-red-100 text-red-700"
-                              : "bg-yellow-100 text-yellow-700"
+                              ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+                              : "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400"
                           }`}
                         >
                           {mov.tipo}
@@ -240,17 +238,17 @@ export default async function DashboardPage() {
                       </td>
                       <td className="py-3 px-4">
                         <span
-                          className={
+                          className={`font-semibold ${
                             mov.tipo === "REPOSICION"
-                              ? "text-green-600"
-                              : "text-red-600"
-                          }
+                              ? "text-green-600 dark:text-green-400"
+                              : "text-red-600 dark:text-red-400"
+                          }`}
                         >
                           {mov.tipo === "REPOSICION" ? "+" : "-"}
                           {mov.cantidad}
                         </span>
                       </td>
-                      <td className="py-3 px-4 text-[var(--sinvello-text)]">
+                      <td className="py-3 px-4 text-[var(--muted-foreground)]">
                         {mov.usuario?.nombre || "Sistema"}
                       </td>
                     </tr>

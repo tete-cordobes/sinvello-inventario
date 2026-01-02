@@ -5,8 +5,12 @@ import { useSession } from "next-auth/react"
 import { Header } from "@/components/layout/Header"
 import ProductCard from "@/components/inventario/ProductCard"
 import MovimientoModal from "@/components/inventario/MovimientoModal"
-import { Search, Filter, AlertTriangle, Package, Loader2, Edit3, X, Save } from "lucide-react"
+import { Search, Filter, AlertTriangle, Package, Loader2, Edit3, X, Save, CheckCircle } from "lucide-react"
 import { Rol } from "@prisma/client"
+import { PageSkeleton } from "@/components/ui/Skeleton"
+import { showToast } from "@/components/ui/Toast"
+import { Breadcrumb } from "@/components/layout/Breadcrumb"
+import { useBreadcrumbs } from "@/hooks/useBreadcrumbs"
 
 interface InventarioItem {
   id: string
@@ -141,6 +145,10 @@ export default function InventarioPage() {
       setBulkChanges({})
       setBulkEditMode(false)
       await fetchInventario()
+      showToast({
+        title: "Cambios guardados",
+        description: `${Object.keys(bulkChanges).length} productos actualizados`,
+      })
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al guardar cambios")
     } finally {
@@ -167,7 +175,7 @@ export default function InventarioPage() {
 
       <div className="p-6">
         {/* Filtros */}
-        <div className="card p-4 mb-6">
+        <div className="card p-4 mb-6 bg-gradient-to-br from-[var(--card)] to-[var(--muted)]">
           <div className="flex flex-col md:flex-row gap-4">
             {/* Búsqueda */}
             <div className="relative flex-1">
@@ -181,8 +189,10 @@ export default function InventarioPage() {
                 value={busqueda}
                 onChange={(e) => setBusqueda(e.target.value)}
                 className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-[var(--border)]
+                           bg-[var(--input)] text-[var(--foreground)]
                            focus:outline-none focus:ring-2 focus:ring-[var(--sinvello-primary)]/20
-                           focus:border-[var(--sinvello-primary)] transition-all"
+                           focus:border-[var(--sinvello-primary)] transition-all
+                           placeholder:text-[var(--muted-foreground)]"
               />
             </div>
 
@@ -198,7 +208,7 @@ export default function InventarioPage() {
                 className="pl-10 pr-8 py-2.5 rounded-lg border border-[var(--border)]
                            focus:outline-none focus:ring-2 focus:ring-[var(--sinvello-primary)]/20
                            focus:border-[var(--sinvello-primary)] transition-all
-                           appearance-none bg-white min-w-[180px]"
+                           appearance-none bg-[var(--input)] text-[var(--foreground)] min-w-[180px]"
               >
                 <option value="">Todas las categorías</option>
                 {categorias.map((cat) => (
@@ -212,10 +222,11 @@ export default function InventarioPage() {
             {/* Stock bajo */}
             <button
               onClick={() => setStockBajo(!stockBajo)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border transition-all ${
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border transition-all
+                         shadow-sm hover:shadow-md active:scale-95 ${
                 stockBajo
-                  ? "bg-red-50 border-red-300 text-red-700"
-                  : "border-[var(--border)] text-[var(--sinvello-text-dark)] hover:bg-[var(--muted)]"
+                  ? "bg-gradient-to-r from-red-500 to-red-600 border-red-400 text-white"
+                  : "border-[var(--border)] text-[var(--foreground)] bg-[var(--input)] hover:bg-[var(--muted)]"
               }`}
             >
               <AlertTriangle size={18} />
@@ -242,10 +253,11 @@ export default function InventarioPage() {
                     setBulkEditMode(true)
                   }
                 }}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border transition-all ${
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border transition-all
+                           shadow-sm hover:shadow-md active:scale-95 ${
                   bulkEditMode
-                    ? "bg-blue-50 border-blue-300 text-blue-700"
-                    : "border-[var(--border)] text-[var(--sinvello-text-dark)] hover:bg-[var(--muted)]"
+                    ? "bg-gradient-to-r from-blue-500 to-blue-600 border-blue-400 text-white"
+                    : "border-[var(--border)] text-[var(--foreground)] bg-[var(--input)] hover:bg-[var(--muted)]"
                 }`}
               >
                 {bulkEditMode ? <X size={18} /> : <Edit3 size={18} />}
@@ -260,7 +272,9 @@ export default function InventarioPage() {
               <button
                 onClick={handleBulkSave}
                 disabled={isSaving}
-                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg
+                           hover:from-green-600 hover:to-green-700 disabled:opacity-50 disabled:cursor-not-allowed
+                           transition-all active:scale-95 shadow-md"
               >
                 <Save size={18} />
                 <span>{isSaving ? "Guardando..." : "Guardar cambios"}</span>
@@ -270,7 +284,8 @@ export default function InventarioPage() {
               </button>
               <button
                 onClick={() => setBulkChanges({})}
-                className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-gray-600 to-gray-700 text-white rounded-lg
+                           hover:from-gray-700 hover:to-gray-800 transition-all active:scale-95 shadow-md"
               >
                 <X size={18} />
                 <span>Descartar cambios</span>
@@ -281,7 +296,7 @@ export default function InventarioPage() {
 
         {/* Error */}
         {error && (
-          <div className="p-4 mb-6 rounded-lg bg-red-50 border border-red-200 text-red-600">
+          <div className="p-4 mb-6 rounded-lg bg-gradient-to-r from-red-500 to-red-600 border border-red-400 text-white shadow-lg">
             {error}
           </div>
         )}
@@ -291,124 +306,127 @@ export default function InventarioPage() {
           <div className="flex items-center justify-center py-20">
             <Loader2 className="animate-spin text-[var(--sinvello-primary)]" size={40} />
           </div>
-        ) : inventario.length === 0 ? (
-          <div className="text-center py-20">
-            <Package size={48} className="mx-auto text-[var(--sinvello-text)] mb-4" />
-            <p className="text-lg text-[var(--sinvello-text-dark)]">
-              No se encontraron productos
-            </p>
-            <p className="text-[var(--sinvello-text)]">
-              Intenta con otros filtros de búsqueda
-            </p>
-          </div>
-         ) : (
-           /* Grid de productos o tabla bulk */
-           bulkEditMode ? (
-             <div className="overflow-x-auto">
-               <table className="w-full bg-white rounded-lg border border-[var(--border)]">
-                 <thead className="bg-[var(--muted)]">
-                   <tr>
-                     <th className="px-4 py-3 text-left text-sm font-medium text-[var(--sinvello-text-dark)]">
-                       Producto
-                     </th>
-                     <th className="px-4 py-3 text-left text-sm font-medium text-[var(--sinvello-text-dark)]">
-                       Categoría
-                     </th>
-                     <th className="px-4 py-3 text-right text-sm font-medium text-[var(--sinvello-text-dark)]">
-                       Stock Actual
-                     </th>
-                     <th className="px-4 py-3 text-right text-sm font-medium text-[var(--sinvello-text-dark)]">
-                       Stock Mínimo
-                     </th>
-                     <th className="px-4 py-3 text-right text-sm font-medium text-[var(--sinvello-text-dark)]">
-                       Stock Máximo
-                     </th>
-                   </tr>
-                 </thead>
+         ) : inventario.length === 0 ? (
+           <div className="text-center py-20">
+             <Package size={48} className="mx-auto text-[var(--muted-foreground)] mb-4" />
+             <p className="text-lg text-[var(--foreground)]">
+               No se encontraron productos
+             </p>
+             <p className="text-[var(--muted-foreground)]">
+               Intenta con otros filtros de búsqueda
+             </p>
+           </div>
+           ) : (
+            /* Grid de productos o tabla bulk */
+            bulkEditMode ? (
+              <div className="overflow-x-auto">
+                <table className="w-full bg-[var(--card)] rounded-lg border border-[var(--border)] shadow-lg">
+                  <thead className="bg-gradient-to-r from-[var(--muted)] to-[var(--border)]">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-[var(--foreground)]">
+                        Producto
+                      </th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-[var(--foreground)]">
+                        Categoría
+                      </th>
+                      <th className="px-4 py-3 text-right text-sm font-medium text-[var(--foreground)]">
+                        Stock Actual
+                      </th>
+                      <th className="px-4 py-3 text-right text-sm font-medium text-[var(--foreground)]">
+                        Stock Mínimo
+                      </th>
+                      <th className="px-4 py-3 text-right text-sm font-medium text-[var(--foreground)]">
+                        Stock Máximo
+                      </th>
+                    </tr>
+                  </thead>
                  <tbody>
                    {inventario.map((item) => {
                      const changes = bulkChanges[item.id] || {}
                      const hasChanges = Object.keys(changes).length > 0
 
-                     return (
-                       <tr
-                         key={item.id}
-                         className={`border-b border-[var(--border)] last:border-0 ${
-                           hasChanges ? "bg-blue-50" : ""
-                         }`}
-                       >
-                         <td className="px-4 py-3">
-                           <div className="flex items-center gap-3">
-                             {item.producto.imagenUrl && (
-                               <img
-                                 src={item.producto.imagenUrl}
-                                 alt={item.producto.nombre}
-                                 className="w-10 h-10 rounded object-contain"
-                               />
-                             )}
-                             <div>
-                               <p className="font-medium text-[var(--sinvello-text-dark)]">
-                                 {item.producto.nombre}
-                               </p>
-                               {session.user.rol === Rol.CENTRAL && item.franquicia && (
-                                 <p className="text-xs text-[var(--sinvello-text)]">
-                                   {item.franquicia.nombre}
-                                 </p>
-                               )}
-                             </div>
-                           </div>
-                         </td>
-                         <td className="px-4 py-3">
-                           <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-[var(--muted)] text-[var(--sinvello-text)]">
-                             {item.producto.categoria}
-                           </span>
-                         </td>
-                         <td className="px-4 py-3">
-                           <input
-                             type="number"
-                             min="0"
-                             value={changes.cantidadActual ?? item.cantidadActual}
-                             onChange={(e) =>
-                               handleBulkChange(item.id, "cantidadActual", parseInt(e.target.value) || 0)
-                             }
-                             className={`w-24 text-right px-2 py-1 rounded border ${
-                               hasChanges && changes.cantidadActual !== undefined
-                                 ? "border-blue-300 bg-white"
-                                 : "border-[var(--border)]"
-                             }`}
-                           />
-                         </td>
-                         <td className="px-4 py-3">
-                           <input
-                             type="number"
-                             min="0"
-                             value={changes.stockMinimo ?? item.stockMinimo}
-                             onChange={(e) =>
-                               handleBulkChange(item.id, "stockMinimo", parseInt(e.target.value) || 0)
-                             }
-                             className={`w-24 text-right px-2 py-1 rounded border ${
-                               changes.stockMinimo !== undefined
-                                 ? "border-blue-300 bg-white"
-                                 : "border-[var(--border)]"
-                             }`}
-                           />
-                         </td>
-                         <td className="px-4 py-3">
-                           <input
-                             type="number"
-                             min="0"
-                             value={changes.stockMaximo ?? item.stockMaximo}
-                             onChange={(e) =>
-                               handleBulkChange(item.id, "stockMaximo", parseInt(e.target.value) || 0)
-                             }
-                             className={`w-24 text-right px-2 py-1 rounded border ${
-                               changes.stockMaximo !== undefined
-                                 ? "border-blue-300 bg-white"
-                                 : "border-[var(--border)]"
-                             }`}
-                           />
-                         </td>
-                       </tr>
+                      return (
+                        <tr
+                          key={item.id}
+                          className={`border-b border-[var(--border)] last:border-0 hover:bg-[var(--muted)]/50 transition-colors ${
+                            hasChanges ? "bg-blue-50 dark:bg-blue-900/30" : ""
+                          }`}
+                        >
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-3">
+                              {item.producto.imagenUrl && (
+                                <img
+                                  src={item.producto.imagenUrl}
+                                  alt={item.producto.nombre}
+                                  className="w-10 h-10 rounded object-contain"
+                                />
+                              )}
+                              <div>
+                                <p className="font-medium text-[var(--foreground)]">
+                                  {item.producto.nombre}
+                                </p>
+                                {session.user.rol === Rol.CENTRAL && item.franquicia && (
+                                  <p className="text-xs text-[var(--muted-foreground)]">
+                                    {item.franquicia.nombre}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-[var(--muted)] text-[var(--foreground)]">
+                              {item.producto.categoria}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3">
+                            <input
+                              type="number"
+                              min="0"
+                              value={changes.cantidadActual ?? item.cantidadActual}
+                              onChange={(e) =>
+                                handleBulkChange(item.id, "cantidadActual", parseInt(e.target.value) || 0)
+                              }
+                              className={`w-24 text-right px-2 py-1 rounded border transition-all
+                                         focus:ring-2 focus:ring-[var(--sinvello-primary)]/20 bg-[var(--input)] text-[var(--foreground)] ${
+                                hasChanges && changes.cantidadActual !== undefined
+                                  ? "border-blue-300 dark:border-blue-500 focus:border-blue-500"
+                                  : "border-[var(--border)] focus:border-[var(--sinvello-primary)]"
+                              }`}
+                            />
+                          </td>
+                          <td className="px-4 py-3">
+                            <input
+                              type="number"
+                              min="0"
+                              value={changes.stockMinimo ?? item.stockMinimo}
+                              onChange={(e) =>
+                                handleBulkChange(item.id, "stockMinimo", parseInt(e.target.value) || 0)
+                              }
+                              className={`w-24 text-right px-2 py-1 rounded border transition-all
+                                         focus:ring-2 focus:ring-[var(--sinvello-primary)]/20 bg-[var(--input)] text-[var(--foreground)] ${
+                                changes.stockMinimo !== undefined
+                                  ? "border-blue-300 dark:border-blue-500 focus:border-blue-500"
+                                  : "border-[var(--border)] focus:border-[var(--sinvello-primary)]"
+                              }`}
+                            />
+                          </td>
+                          <td className="px-4 py-3">
+                            <input
+                              type="number"
+                              min="0"
+                              value={changes.stockMaximo ?? item.stockMaximo}
+                              onChange={(e) =>
+                                handleBulkChange(item.id, "stockMaximo", parseInt(e.target.value) || 0)
+                              }
+                              className={`w-24 text-right px-2 py-1 rounded border transition-all
+                                         focus:ring-2 focus:ring-[var(--sinvello-primary)]/20 bg-[var(--input)] text-[var(--foreground)] ${
+                                changes.stockMaximo !== undefined
+                                  ? "border-blue-300 dark:border-blue-500 focus:border-blue-500"
+                                  : "border-[var(--border)] focus:border-[var(--sinvello-primary)]"
+                              }`}
+                            />
+                          </td>
+                        </tr>
                      )
                    })}
                  </tbody>
@@ -435,12 +453,12 @@ export default function InventarioPage() {
            )
          )}
 
-        {/* Resumen */}
-        {!isLoading && inventario.length > 0 && (
-          <div className="mt-6 text-center text-[var(--sinvello-text)]">
-            Mostrando {inventario.length} productos
-          </div>
-        )}
+         {/* Resumen */}
+         {!isLoading && inventario.length > 0 && (
+           <div className="mt-6 text-center text-[var(--muted-foreground)]">
+             Mostrando {inventario.length} productos
+           </div>
+         )}
       </div>
 
       {/* Modal de movimiento */}
